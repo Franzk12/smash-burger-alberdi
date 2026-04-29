@@ -61,10 +61,41 @@ export function CheckoutModal({ onClose, onSuccess }: Props) {
     return encodeURIComponent(msg);
   }
 
-  function handleConfirmar() {
-    const msg = buildWhatsAppMessage();
-    window.open(`https://wa.me/${WHATSAPP_NUMBER}?text=${msg}`, "_blank");
-    setStep("confirmado");
+  const [loadingMP, setLoadingMP] = useState(false);
+  const [errorMP, setErrorMP] = useState("");
+
+  async function handleConfirmar() {
+    if (pago === "mercadopago") {
+      setLoadingMP(true);
+      setErrorMP("");
+      try {
+        const res = await fetch("/api/create-preference", {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({
+            items: items.map((i) => ({ name: i.name, price: i.price, quantity: i.quantity })),
+            nombre,
+            modalidad,
+            direccion,
+            zona,
+          }),
+        });
+        const data = await res.json();
+        if (data.sandbox_init_point) {
+          window.location.href = data.sandbox_init_point;
+        } else {
+          setErrorMP("No se pudo conectar con MercadoPago. Intentá con efectivo.");
+        }
+      } catch {
+        setErrorMP("Error de conexión. Intentá de nuevo.");
+      } finally {
+        setLoadingMP(false);
+      }
+    } else {
+      const msg = buildWhatsAppMessage();
+      window.open(`https://wa.me/${WHATSAPP_NUMBER}?text=${msg}`, "_blank");
+      setStep("confirmado");
+    }
   }
 
   return (
@@ -246,6 +277,9 @@ export function CheckoutModal({ onClose, onSuccess }: Props) {
                 </div>
               </div>
 
+              {errorMP && (
+                <p className="text-destructive text-xs text-center">{errorMP}</p>
+              )}
               <div className="flex gap-2">
                 <button
                   onClick={() => setStep("datos")}
@@ -254,11 +288,11 @@ export function CheckoutModal({ onClose, onSuccess }: Props) {
                   Atrás
                 </button>
                 <button
-                  disabled={!pago}
+                  disabled={!pago || loadingMP}
                   onClick={handleConfirmar}
                   className="flex-1 bg-primary text-primary-foreground py-2.5 rounded-lg font-bold text-sm disabled:opacity-40 disabled:cursor-not-allowed hover:bg-primary/90 transition-colors"
                 >
-                  Enviar por WhatsApp
+                  {loadingMP ? "Conectando..." : pago === "mercadopago" ? "Pagar con MercadoPago" : "Enviar por WhatsApp"}
                 </button>
               </div>
             </div>
