@@ -1,9 +1,7 @@
 export const dynamic = "force-dynamic";
 
-import { Suspense } from "react";
 import { CheckCircle } from "lucide-react";
 import Link from "next/link";
-import { PedidoExitosoContent } from "./content";
 
 export default function PedidoExitoso() {
   return (
@@ -16,9 +14,6 @@ export default function PedidoExitoso() {
         <p className="text-muted-foreground">
           Tu pedido fue pagado y enviado al local. Te van a avisar por WhatsApp cuando esté listo.
         </p>
-        <Suspense fallback={null}>
-          <PedidoExitosoContent />
-        </Suspense>
         <p className="text-sm text-muted-foreground">⏱ Tiempo estimado: hasta 30 minutos</p>
         <Link
           href="/"
