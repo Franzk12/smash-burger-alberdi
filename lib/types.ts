@@ -23,3 +23,13 @@ export type Order = {
   phone?: string
   notes?: string
 }
+
+export type OrdersContextType = {
+  orders: Order[]
+  updateOrderStatus: (orderId: string, status: OrderStatus) => void
+  addOrder: (order: Order) => void
+  pendingCount: number
+  preparingCount: number
+  loading: boolean
+  refresh: () => void
+}

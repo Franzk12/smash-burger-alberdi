@@ -1,60 +1,8 @@
 "use client"
 
-import { createContext, useContext, useState, useEffect, type ReactNode } from "react"
+import { createContext, useContext, useState, useEffect, useCallback, type ReactNode } from "react"
 import type { Order, OrderStatus } from "./types"
-
-const generateDemoOrders = (): Order[] => {
-  const now = new Date()
-  return [
-    {
-      id: "ORD-001",
-      customerName: "Juan Pérez",
-      items: [
-        { name: "Big Smash", quantity: 2, price: 4500 },
-        { name: "Papas Smash", quantity: 1, price: 2000 },
-      ],
-      total: 11000,
-      orderType: "delivery",
-      address: "Av. Alberdi 1234, Piso 2",
-      paymentMethod: "transferencia",
-      status: "pendiente",
-      createdAt: new Date(now.getTime() - 5 * 60000),
-      phone: "3865123456",
-    },
-    {
-      id: "ORD-002",
-      customerName: "María González",
-      items: [
-        { name: "Cheese Burger", quantity: 1, price: 4000 },
-        { name: "Crispy Onion", quantity: 1, price: 5000 },
-        { name: "Aros de Cebolla", quantity: 1, price: 1500 },
-      ],
-      total: 10500,
-      orderType: "retiro",
-      paymentMethod: "efectivo",
-      status: "preparando",
-      createdAt: new Date(now.getTime() - 15 * 60000),
-      phone: "3865654321",
-    },
-    {
-      id: "ORD-003",
-      customerName: "Carlos Rodríguez",
-      items: [
-        { name: "OKC Smash", quantity: 3, price: 5500 },
-        { name: "Salchipapa", quantity: 2, price: 3000 },
-        { name: "Bacon", quantity: 3, price: 800 },
-      ],
-      total: 24900,
-      orderType: "delivery",
-      address: "Calle San Martín 567",
-      paymentMethod: "mercadopago",
-      status: "pendiente",
-      createdAt: new Date(now.getTime() - 2 * 60000),
-      phone: "3865789012",
-      notes: "Sin cebolla en las hamburguesas",
-    },
-  ]
-}
+import { useAuth } from "./auth-context"
 
 type OrdersContextType = {
   orders: Order[]
@@ -62,23 +10,73 @@ type OrdersContextType = {
   addOrder: (order: Order) => void
   pendingCount: number
   preparingCount: number
+  loading: boolean
+  refresh: () => void
+  [key: string]: any
 }
 
 const OrdersContext = createContext<OrdersContextType | undefined>(undefined)
 
 export function OrdersProvider({ children }: { children: ReactNode }) {
+  const { password } = useAuth()
   const [orders, setOrders] = useState<Order[]>([])
+  const [loading, setLoading] = useState(true)
 
+  const fetchOrders = useCallback(async () => {
+    try {
+      const res = await fetch("/api/pedidos", {
+        headers: { "x-panel-password": password },
+      })
+      if (!res.ok) return
+      const data = await res.json()
+
+      // Convertir formato API → formato Order del panel
+      const mapped: Order[] = data.pedidos.map((p: any) => ({
+        id: p.id,
+        customerName: p.nombre,
+        items: p.items.map((i: any) => ({
+          name: i.name,
+          quantity: i.quantity,
+          price: i.price,
+        })),
+        total: p.total,
+        orderType: p.modalidad,
+        address: p.direccion,
+        paymentMethod: p.pago,
+        status: p.estado === "en-preparacion" ? "preparando" : p.estado,
+        createdAt: new Date(p.timestamp),
+        notes: p.zona === "fuera" ? "Fuera de zona (+$2.000 envío)" : undefined,
+      }))
+      setOrders(mapped)
+    } finally {
+      setLoading(false)
+    }
+  }, [password])
+
+  // Cargar pedidos al montar y auto-refresh cada 15s
   useEffect(() => {
-    setOrders(generateDemoOrders())
-  }, [])
+    fetchOrders()
+    const interval = setInterval(fetchOrders, 15000)
+    return () => clearInterval(interval)
+  }, [fetchOrders])
 
-  const updateOrderStatus = (orderId: string, status: OrderStatus) => {
+  const updateOrderStatus = async (orderId: string, status: OrderStatus) => {
+    // Actualizar localmente primero (optimistic update)
     setOrders((prev) =>
       prev.map((order) =>
         order.id === orderId ? { ...order, status } : order
       )
     )
+    // Sincronizar con la API
+    const apiEstado = status === "preparando" ? "en-preparacion" : status
+    await fetch("/api/pedidos", {
+      method: "PATCH",
+      headers: {
+        "Content-Type": "application/json",
+        "x-panel-password": password,
+      },
+      body: JSON.stringify({ id: orderId, estado: apiEstado }),
+    })
   }
 
   const addOrder = (order: Order) => {
@@ -90,7 +88,7 @@ export function OrdersProvider({ children }: { children: ReactNode }) {
 
   return (
     <OrdersContext.Provider
-      value={{ orders, updateOrderStatus, addOrder, pendingCount, preparingCount }}
+      value={{ orders, updateOrderStatus, addOrder, pendingCount, preparingCount, loading, refresh: fetchOrders }}
     >
       {children}
     </OrdersContext.Provider>
