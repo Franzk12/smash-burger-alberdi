@@ -19,7 +19,7 @@ export function LoginForm() {
 
     await new Promise((resolve) => setTimeout(resolve, 500))
 
-    const success = login(password)
+    const success = await login(password)
     if (!success) {
       setError(true)
       setPassword("")

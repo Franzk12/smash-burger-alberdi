@@ -2,6 +2,7 @@
 
 import { AuthProvider, useAuth } from "@/lib/auth-context"
 import { OrdersProvider } from "@/lib/orders-context"
+import { ProductsProvider } from "@/lib/products-context"
 import { LoginForm } from "@/components/admin/login-form"
 import { AdminPanel } from "@/components/admin/admin-panel"
 
@@ -14,7 +15,9 @@ function AdminContent() {
 
   return (
     <OrdersProvider>
-      <AdminPanel />
+      <ProductsProvider isAdmin={true}>
+        <AdminPanel />
+      </ProductsProvider>
     </OrdersProvider>
   )
 }

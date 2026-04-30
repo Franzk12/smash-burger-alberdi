@@ -1,19 +1,9 @@
 "use client"
 
 import { createContext, useContext, useState, useEffect, useCallback, type ReactNode } from "react"
-import type { Order, OrderStatus } from "./types"
 import { useAuth } from "./auth-context"
-
-type OrdersContextType = {
-  orders: Order[]
-  updateOrderStatus: (orderId: string, status: OrderStatus) => void
-  addOrder: (order: Order) => void
-  pendingCount: number
-  preparingCount: number
-  loading: boolean
-  refresh: () => void
-  [key: string]: any
-}
+import { supabase } from "./supabase"
+import type { Order, OrderStatus, OrdersContextType } from "./types"
 
 const OrdersContext = createContext<OrdersContextType | undefined>(undefined)
 
@@ -25,40 +15,43 @@ export function OrdersProvider({ children }: { children: ReactNode }) {
   const fetchOrders = useCallback(async () => {
     try {
       const res = await fetch("/api/pedidos", {
-        headers: { "x-panel-password": password },
+        headers: { "x-panel-password": password || "" },
       })
       if (!res.ok) return
       const data = await res.json()
 
-      // Convertir formato API → formato Order del panel
-      const mapped: Order[] = data.pedidos.map((p: any) => ({
-        id: p.id,
-        customerName: p.nombre,
-        items: p.items.map((i: any) => ({
-          name: i.name,
-          quantity: i.quantity,
-          price: i.price,
-        })),
-        total: p.total,
-        orderType: p.modalidad,
-        address: p.direccion,
-        paymentMethod: p.pago,
-        status: p.estado === "en-preparacion" ? "preparando" : p.estado,
-        createdAt: new Date(p.timestamp),
-        phone: p.telefono || undefined,
-        notes: p.zona === "fuera" ? "Fuera de zona (+$2.000 envío)" : undefined,
-      }))
-      setOrders(mapped)
+      if (data.pedidos) {
+        const formatted: Order[] = data.pedidos.map((p: any) => ({
+          ...p,
+          createdAt: new Date(p.createdAt)
+        }))
+        setOrders(formatted)
+      }
+    } catch (error) {
+      console.error("Error fetching orders:", error)
     } finally {
       setLoading(false)
     }
   }, [password])
 
-  // Cargar pedidos al montar y auto-refresh cada 15s
   useEffect(() => {
     fetchOrders()
-    const interval = setInterval(fetchOrders, 15000)
-    return () => clearInterval(interval)
+
+    // Configurar Realtime con Supabase
+    const channel = supabase
+      .channel('pedidos_cambios')
+      .on(
+        'postgres_changes',
+        { event: '*', table: 'pedidos', schema: 'public' },
+        () => {
+          fetchOrders()
+        }
+      )
+      .subscribe()
+
+    return () => {
+      supabase.removeChannel(channel)
+    }
   }, [fetchOrders])
 
   const updateOrderStatus = async (orderId: string, status: OrderStatus) => {
@@ -68,15 +61,14 @@ export function OrdersProvider({ children }: { children: ReactNode }) {
         order.id === orderId ? { ...order, status } : order
       )
     )
-    // Sincronizar con la API
-    const apiEstado = status === "preparando" ? "en-preparacion" : status
+    
     await fetch("/api/pedidos", {
       method: "PATCH",
       headers: {
         "Content-Type": "application/json",
-        "x-panel-password": password,
+        "x-panel-password": password || "",
       },
-      body: JSON.stringify({ id: orderId, estado: apiEstado }),
+      body: JSON.stringify({ id: orderId, estado: status }),
     })
   }
 
@@ -86,10 +78,24 @@ export function OrdersProvider({ children }: { children: ReactNode }) {
 
   const pendingCount = orders.filter((o) => o.status === "pendiente").length
   const preparingCount = orders.filter((o) => o.status === "preparando").length
+  const completedCount = orders.filter((o) => o.status === "completado").length
+  const totalSales = orders
+    .filter((o) => o.status === "completado")
+    .reduce((sum, o) => sum + o.total, 0)
 
   return (
     <OrdersContext.Provider
-      value={{ orders, updateOrderStatus, addOrder, pendingCount, preparingCount, loading, refresh: fetchOrders }}
+      value={{
+        orders,
+        updateOrderStatus,
+        addOrder,
+        pendingCount,
+        preparingCount,
+        completedCount,
+        totalSales,
+        loading,
+        refresh: fetchOrders,
+      }}
     >
       {children}
     </OrdersContext.Provider>

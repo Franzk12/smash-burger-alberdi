@@ -1,22 +1,5 @@
 import { NextRequest, NextResponse } from "next/server";
-
-// Storage en memoria (se resetea si se reinicia el servidor)
-// Para producción real se usaría una base de datos
-const pedidos: Pedido[] = [];
-
-export type Pedido = {
-  id: string;
-  timestamp: number;
-  nombre: string;
-  telefono: string;
-  items: { name: string; price: number; quantity: number }[];
-  total: number;
-  modalidad: "retiro" | "delivery";
-  direccion?: string;
-  zona?: string;
-  pago: "efectivo" | "mercadopago";
-  estado: "pendiente" | "en-preparacion" | "listo" | "entregado";
-};
+import { supabase } from "@/lib/supabase";
 
 // GET — obtener todos los pedidos (requiere password)
 export async function GET(req: NextRequest) {
@@ -24,30 +7,84 @@ export async function GET(req: NextRequest) {
   if (pass !== process.env.PANEL_PASSWORD) {
     return NextResponse.json({ error: "No autorizado" }, { status: 401 });
   }
-  return NextResponse.json({ pedidos: pedidos.sort((a, b) => b.timestamp - a.timestamp) });
+
+  try {
+    const { data, error } = await supabase
+      .from('pedidos')
+      .select('*, items:items_pedido(*)')
+      .order('created_at', { ascending: false });
+
+    if (error) throw error;
+
+    // Adaptar campos de DB a formato esperado por el frontend
+    const pedidos = data.map(p => ({
+      id: p.id,
+      customerName: p.customer_name,
+      phone: p.phone,
+      items: p.items,
+      total: Number(p.total),
+      orderType: p.order_type,
+      address: p.address,
+      paymentMethod: p.payment_method,
+      status: p.status,
+      createdAt: new Date(p.created_at),
+      notes: p.notes
+    }));
+
+    return NextResponse.json({ pedidos });
+  } catch (error: any) {
+    return NextResponse.json({ error: error.message }, { status: 500 });
+  }
 }
 
 // POST — crear nuevo pedido
 export async function POST(req: NextRequest) {
   try {
     const body = await req.json();
-    const pedido: Pedido = {
-      id: `P${Date.now()}`,
-      timestamp: Date.now(),
-      nombre: body.nombre,
-      telefono: body.telefono || "",
-      items: body.items,
-      total: body.total,
-      modalidad: body.modalidad,
-      direccion: body.direccion,
-      zona: body.zona,
-      pago: body.pago,
-      estado: "pendiente",
-    };
-    pedidos.push(pedido);
-    return NextResponse.json({ ok: true, id: pedido.id });
-  } catch {
-    return NextResponse.json({ error: "Error al guardar pedido" }, { status: 500 });
+    const pedidoId = `ORD-${Math.random().toString(36).substr(2, 4).toUpperCase()}`;
+
+    // 1. Guardar el pedido
+    const { error: pedidoError } = await supabase
+      .from('pedidos')
+      .insert({
+        id: pedidoId,
+        customer_name: body.nombre,
+        phone: body.telefono,
+        address: body.direccion,
+        order_type: body.modalidad,
+        payment_method: body.pago,
+        total: body.total,
+        notes: body.notas || body.notes || "",
+        status: 'pendiente'
+      });
+
+    if (pedidoError) {
+      console.error("Error al insertar pedido:", pedidoError);
+      throw pedidoError;
+    }
+
+    // 2. Guardar los items
+    const itemsToInsert = body.items.map((item: any) => ({
+      pedido_id: pedidoId,
+      name: item.name,
+      price: item.price,
+      quantity: item.quantity,
+      category: item.category || "burger"
+    }));
+
+    const { error: itemsError } = await supabase
+      .from('items_pedido')
+      .insert(itemsToInsert);
+
+    if (itemsError) {
+      console.error("Error al insertar items:", itemsError);
+      throw itemsError;
+    }
+
+    return NextResponse.json({ ok: true, id: pedidoId });
+  } catch (error: any) {
+    console.error("Error en POST /api/pedidos:", error);
+    return NextResponse.json({ error: error.message }, { status: 500 });
   }
 }
 
@@ -57,9 +94,19 @@ export async function PATCH(req: NextRequest) {
   if (pass !== process.env.PANEL_PASSWORD) {
     return NextResponse.json({ error: "No autorizado" }, { status: 401 });
   }
-  const { id, estado } = await req.json();
-  const pedido = pedidos.find((p) => p.id === id);
-  if (!pedido) return NextResponse.json({ error: "Pedido no encontrado" }, { status: 404 });
-  pedido.estado = estado;
-  return NextResponse.json({ ok: true });
+
+  try {
+    const { id, estado } = await req.json();
+    
+    const { error } = await supabase
+      .from('pedidos')
+      .update({ status: estado })
+      .eq('id', id);
+
+    if (error) throw error;
+
+    return NextResponse.json({ ok: true });
+  } catch (error: any) {
+    return NextResponse.json({ error: error.message }, { status: 500 });
+  }
 }
