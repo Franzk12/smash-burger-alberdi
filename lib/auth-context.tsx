@@ -2,11 +2,10 @@
 
 import { createContext, useContext, useState, useEffect, type ReactNode } from "react"
 
-const ADMIN_PASSWORD = "smash2024"
-
 type AuthContextType = {
   isAuthenticated: boolean
-  login: (password: string) => boolean
+  password: string
+  login: (password: string) => Promise<boolean>
   logout: () => void
 }
 
@@ -14,18 +13,25 @@ const AuthContext = createContext<AuthContextType | undefined>(undefined)
 
 export function AuthProvider({ children }: { children: ReactNode }) {
   const [isAuthenticated, setIsAuthenticated] = useState(false)
+  const [password, setPassword] = useState("")
 
   useEffect(() => {
-    const authStatus = sessionStorage.getItem("smash_auth")
-    if (authStatus === "authenticated") {
+    const savedPass = sessionStorage.getItem("smash_pass")
+    if (savedPass) {
+      setPassword(savedPass)
       setIsAuthenticated(true)
     }
   }, [])
 
-  const login = (password: string): boolean => {
-    if (password === ADMIN_PASSWORD) {
+  const login = async (pass: string): Promise<boolean> => {
+    // Valida contra la API real
+    const res = await fetch("/api/pedidos", {
+      headers: { "x-panel-password": pass },
+    })
+    if (res.ok) {
       setIsAuthenticated(true)
-      sessionStorage.setItem("smash_auth", "authenticated")
+      setPassword(pass)
+      sessionStorage.setItem("smash_pass", pass)
       return true
     }
     return false
@@ -33,11 +39,12 @@ export function AuthProvider({ children }: { children: ReactNode }) {
 
   const logout = () => {
     setIsAuthenticated(false)
-    sessionStorage.removeItem("smash_auth")
+    setPassword("")
+    sessionStorage.removeItem("smash_pass")
   }
 
   return (
-    <AuthContext.Provider value={{ isAuthenticated, login, logout }}>
+    <AuthContext.Provider value={{ isAuthenticated, password, login, logout }}>
       {children}
     </AuthContext.Provider>
   )
