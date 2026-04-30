@@ -30,6 +30,8 @@ export type OrdersContextType = {
   addOrder: (order: Order) => void
   pendingCount: number
   preparingCount: number
+  completedCount: number
+  totalSales: number
   loading: boolean
   refresh: () => void
 }
