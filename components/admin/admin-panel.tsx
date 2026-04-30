@@ -34,6 +34,22 @@ function OrderCard({ order }: { order: Order }) {
   const estadoInfo = ESTADOS.find(e => e.key === order.status) ?? ESTADOS[0]
   const EstadoIcon = estadoInfo.icon
 
+  function notificarCliente() {
+    if (!order.phone) return
+    const numero = `549${order.phone.replace(/\D/g, "")}`
+    const modalidadTexto = order.orderType === "delivery"
+      ? `Tu pedido está en camino 🛵 Dirección: ${order.address}`
+      : "Tu pedido está listo para retirar en el local 🏪"
+    const msg = encodeURIComponent(
+      `¡Hola ${order.customerName}! 👋\n\n` +
+      `*Tu pedido de Smash Burger está listo* 🍔🔥\n\n` +
+      `${modalidadTexto}\n\n` +
+      `*Total:* $${order.total.toLocaleString("es-AR")}\n\n` +
+      `¡Gracias por elegirnos! 😊`
+    )
+    window.open(`https://wa.me/${numero}?text=${msg}`, "_blank")
+  }
+
   return (
     <div className="bg-card border border-border rounded-xl p-5 space-y-4">
       {/* Header */}
@@ -100,13 +116,24 @@ function OrderCard({ order }: { order: Order }) {
         {ESTADOS.filter(e => e.key !== order.status).map(({ key, label, icon: Icon, color }) => (
           <button
             key={key}
-            onClick={() => updateOrderStatus(order.id, key)}
+            onClick={() => {
+              updateOrderStatus(order.id, key)
+              if (key === "completado" && order.phone) notificarCliente()
+            }}
             className={`flex items-center gap-1.5 px-3 py-1.5 rounded-lg border border-border text-xs font-semibold hover:border-primary/50 transition-colors ${color}`}
           >
             <Icon className="w-3 h-3" />
             {label}
           </button>
         ))}
+        {order.phone && (
+          <button
+            onClick={notificarCliente}
+            className="flex items-center gap-1.5 px-3 py-1.5 rounded-lg border border-primary/30 text-xs font-semibold text-primary hover:bg-primary/10 transition-colors"
+          >
+            📱 Notificar cliente
+          </button>
+        )}
       </div>
     </div>
   )

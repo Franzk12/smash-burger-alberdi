@@ -45,6 +45,7 @@ export function OrdersProvider({ children }: { children: ReactNode }) {
         paymentMethod: p.pago,
         status: p.estado === "en-preparacion" ? "preparando" : p.estado,
         createdAt: new Date(p.timestamp),
+        phone: p.telefono || undefined,
         notes: p.zona === "fuera" ? "Fuera de zona (+$2.000 envío)" : undefined,
       }))
       setOrders(mapped)

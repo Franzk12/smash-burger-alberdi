@@ -8,6 +8,7 @@ export type Pedido = {
   id: string;
   timestamp: number;
   nombre: string;
+  telefono: string;
   items: { name: string; price: number; quantity: number }[];
   total: number;
   modalidad: "retiro" | "delivery";
@@ -34,6 +35,7 @@ export async function POST(req: NextRequest) {
       id: `P${Date.now()}`,
       timestamp: Date.now(),
       nombre: body.nombre,
+      telefono: body.telefono || "",
       items: body.items,
       total: body.total,
       modalidad: body.modalidad,

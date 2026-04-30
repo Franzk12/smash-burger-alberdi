@@ -22,6 +22,7 @@ export function CheckoutModal({ onClose, onSuccess }: Props) {
   const [zona, setZona] = useState<"alberdi" | "fuera" | "">("");
   const [nombre, setNombre] = useState("");
   const [direccion, setDireccion] = useState("");
+  const [telefono, setTelefono] = useState("");
   const [pago, setPago] = useState<"efectivo" | "mercadopago" | "">("");
 
   const deliveryFee = zona === "fuera" ? DELIVERY_FEE_OUTSIDE : 0;
@@ -44,6 +45,7 @@ export function CheckoutModal({ onClose, onSuccess }: Props) {
       `🍔 *NUEVO PEDIDO — SMASH BURGER*`,
       ``,
       `👤 *Cliente:* ${nombre}`,
+      `📱 *Teléfono:* ${telefono}`,
       ``,
       `*Productos:*`,
       ...lineas,
@@ -64,6 +66,27 @@ export function CheckoutModal({ onClose, onSuccess }: Props) {
   const [loadingMP, setLoadingMP] = useState(false);
   const [errorMP, setErrorMP] = useState("");
 
+  async function guardarPedido(pagoTipo: string) {
+    try {
+      await fetch("/api/pedidos", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          nombre,
+          telefono,
+          items,
+          total: totalFinal,
+          modalidad,
+          direccion,
+          zona,
+          pago: pagoTipo,
+        }),
+      });
+    } catch {
+      // Si falla el guardado, el pedido igual se procesa
+    }
+  }
+
   async function handleConfirmar() {
     if (pago === "mercadopago") {
       setLoadingMP(true);
@@ -75,6 +98,7 @@ export function CheckoutModal({ onClose, onSuccess }: Props) {
           body: JSON.stringify({
             items: items.map((i) => ({ name: i.name, price: i.price, quantity: i.quantity })),
             nombre,
+            telefono,
             modalidad,
             direccion,
             zona,
@@ -82,6 +106,7 @@ export function CheckoutModal({ onClose, onSuccess }: Props) {
         });
         const data = await res.json();
         if (data.sandbox_init_point) {
+          await guardarPedido("mercadopago");
           window.location.href = data.sandbox_init_point;
         } else {
           setErrorMP("No se pudo conectar con MercadoPago. Intentá con efectivo.");
@@ -92,6 +117,7 @@ export function CheckoutModal({ onClose, onSuccess }: Props) {
         setLoadingMP(false);
       }
     } else {
+      await guardarPedido("efectivo");
       const msg = buildWhatsAppMessage();
       window.open(`https://wa.me/${WHATSAPP_NUMBER}?text=${msg}`, "_blank");
       setStep("confirmado");
@@ -196,6 +222,16 @@ export function CheckoutModal({ onClose, onSuccess }: Props) {
                   className="w-full bg-secondary border border-border rounded-lg px-4 py-2.5 text-foreground text-sm placeholder:text-muted-foreground focus:outline-none focus:border-primary"
                 />
               </div>
+              <div>
+                <label className="text-sm text-muted-foreground mb-1 block">Tu teléfono (WhatsApp) *</label>
+                <input
+                  type="tel"
+                  value={telefono}
+                  onChange={(e) => setTelefono(e.target.value)}
+                  placeholder="Ej: 3865123456"
+                  className="w-full bg-secondary border border-border rounded-lg px-4 py-2.5 text-foreground text-sm placeholder:text-muted-foreground focus:outline-none focus:border-primary"
+                />
+              </div>
               {modalidad === "delivery" && (
                 <div>
                   <label className="text-sm text-muted-foreground mb-1 block">Dirección de entrega *</label>
@@ -216,7 +252,7 @@ export function CheckoutModal({ onClose, onSuccess }: Props) {
                   Atrás
                 </button>
                 <button
-                  disabled={!nombre || (modalidad === "delivery" && !direccion)}
+                  disabled={!nombre || !telefono || (modalidad === "delivery" && !direccion)}
                   onClick={() => setStep("pago")}
                   className="flex-1 bg-primary text-primary-foreground py-2.5 rounded-lg font-bold text-sm disabled:opacity-40 disabled:cursor-not-allowed hover:bg-primary/90 transition-colors"
                 >
