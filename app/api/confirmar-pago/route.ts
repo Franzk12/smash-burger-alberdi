@@ -1,5 +1,4 @@
-import { NextRequest, NextResponse } from "next/server";
-import { supabase } from "@/lib/supabase";
+import { supabase, supabaseAdmin } from "@/lib/supabase";
 
 export async function POST(req: NextRequest) {
   try {
@@ -9,7 +8,7 @@ export async function POST(req: NextRequest) {
       return NextResponse.json({ error: "Falta el ID del pedido" }, { status: 400 });
     }
 
-    const { error } = await supabase
+    const { error } = await supabaseAdmin
       .from('pedidos')
       .update({ payment_method: 'mercadopago' })
       .eq('id', orderId);

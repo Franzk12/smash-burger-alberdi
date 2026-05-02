@@ -1,5 +1,5 @@
 import { NextRequest, NextResponse } from "next/server";
-import { supabase } from "@/lib/supabase";
+import { supabase, supabaseAdmin } from "@/lib/supabase";
 
 // GET — obtener todos los pedidos (requiere password)
 export async function GET(req: NextRequest) {
@@ -9,7 +9,7 @@ export async function GET(req: NextRequest) {
   }
 
   try {
-    const { data, error } = await supabase
+    const { data, error } = await supabaseAdmin
       .from('pedidos')
       .select('*, items:items_pedido(*)')
       .order('created_at', { ascending: false });
@@ -44,7 +44,7 @@ export async function POST(req: NextRequest) {
     const pedidoId = `ORD-${Math.random().toString(36).substr(2, 4).toUpperCase()}`;
 
     // 1. Guardar el pedido
-    const { error: pedidoError } = await supabase
+    const { error: pedidoError } = await supabaseAdmin
       .from('pedidos')
       .insert({
         id: pedidoId,
@@ -82,7 +82,7 @@ export async function POST(req: NextRequest) {
       };
     });
 
-    const { error: itemsError } = await supabase
+    const { error: itemsError } = await supabaseAdmin
       .from('items_pedido')
       .insert(itemsToInsert);
 
@@ -108,7 +108,7 @@ export async function PATCH(req: NextRequest) {
   try {
     const { id, estado } = await req.json();
     
-    const { error } = await supabase
+    const { error } = await supabaseAdmin
       .from('pedidos')
       .update({ status: estado })
       .eq('id', id);

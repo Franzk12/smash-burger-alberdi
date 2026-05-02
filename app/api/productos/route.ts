@@ -1,5 +1,5 @@
 import { NextRequest, NextResponse } from "next/server";
-import { supabase } from "@/lib/supabase";
+import { supabase, supabaseAdmin } from "@/lib/supabase";
 
 // GET - Obtener todos los productos activos (público) o todos (admin)
 export async function GET(req: NextRequest) {
@@ -30,7 +30,7 @@ export async function POST(req: NextRequest) {
 
   const body = await req.json();
 
-  const { data, error } = await supabase
+  const { data, error } = await supabaseAdmin
     .from("productos")
     .insert([
       {
@@ -59,7 +59,7 @@ export async function PATCH(req: NextRequest) {
 
   const { id, ...updates } = await req.json();
 
-  const { data, error } = await supabase
+  const { data, error } = await supabaseAdmin
     .from("productos")
     .update(updates)
     .eq("id", id)
@@ -80,7 +80,7 @@ export async function DELETE(req: NextRequest) {
 
   const { id } = await req.json();
 
-  const { error } = await supabase.from("productos").delete().eq("id", id);
+  const { error } = await supabaseAdmin.from("productos").delete().eq("id", id);
 
   if (error) return NextResponse.json({ error: error.message }, { status: 500 });
 
