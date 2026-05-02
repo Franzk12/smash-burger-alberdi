@@ -41,6 +41,49 @@ export async function GET(req: NextRequest) {
 export async function POST(req: NextRequest) {
   try {
     const body = await req.json();
+
+    // --- VALIDACIÓN DE SEGURIDAD ---
+    // 1. Verificar que el total no sea cero o negativo
+    if (!body.total || body.total <= 0) {
+      return NextResponse.json({ error: "El total del pedido no es válido" }, { status: 400 });
+    }
+
+    // 2. Verificar precios reales contra la Base de Datos
+    const { data: dbProducts } = await supabaseAdmin
+      .from('productos')
+      .select('name, price');
+
+    if (dbProducts) {
+      let totalCalculado = 0;
+      for (const item of body.items) {
+        const prodReal = dbProducts.find(p => p.name === item.name);
+        if (prodReal) {
+          // Sumamos el precio real del producto * cantidad
+          totalCalculado += prodReal.price * item.quantity;
+          
+          // Nota: Si hay adicionales/personalizaciones que suman precio, 
+          // deberíamos validarlos también. Por ahora validamos el base.
+        }
+      }
+
+      // El envío también suma si es fuera de zona
+      if (body.zona === "fuera") {
+        totalCalculado += 2000;
+      }
+
+      // Si hay una diferencia sospechosa (ej: más de $10 pesos por redondeos), rechazamos
+      if (Math.abs(totalCalculado - body.total) > 10) {
+        console.error("ALERTA DE SEGURIDAD: Intento de manipulación de precios detectado", {
+          enviado: body.total,
+          calculado: totalCalculado
+        });
+        return NextResponse.json({ 
+          error: "Diferencia de precios detectada. Por favor, refresca el menú e intenta de nuevo." 
+        }, { status: 400 });
+      }
+    }
+    // --- FIN VALIDACIÓN ---
+
     const pedidoId = `ORD-${Math.random().toString(36).substr(2, 4).toUpperCase()}`;
 
     // 1. Guardar el pedido
