@@ -8,7 +8,7 @@ export type OrderItem = {
 
 export type OrderType = 'retiro' | 'delivery'
 
-export type PaymentMethod = 'efectivo' | 'transferencia' | 'mercadopago'
+export type PaymentMethod = 'efectivo' | 'transferencia' | 'mercadopago' | 'mercadopago_pendiente'
 
 export type OrderStatus = 'pendiente' | 'preparando' | 'completado'
 
