@@ -248,139 +248,194 @@ export function AdminPanel() {
     ? orders.filter(o => o.status !== "completado")
     : orders.filter(o => o.status === filtro)
 
+  const totalHoy = orders
+    .filter(o => o.status === "completado" && new Date(o.createdAt).toDateString() === new Date().toDateString())
+    .reduce((sum, o) => sum + o.total, 0)
+
   return (
     <SidebarProvider>
-      <div className="flex min-h-screen bg-black w-full">
-        <Sidebar className="border-r border-white/5 bg-[#0a0a0a]">
-          <SidebarHeader className="p-6">
-            <h2 className="text-2xl font-black tracking-tighter">
-              <span className="text-foreground">Smash</span>
-              <span className="text-primary">BURGER</span>
-            </h2>
-            <p className="text-[10px] text-muted-foreground font-bold uppercase tracking-[0.2em] opacity-50">Sistema de Pedidos</p>
-          </SidebarHeader>
+      <div className="flex min-h-screen bg-black w-full pb-20 md:pb-0">
+        {/* Sidebar - Oculto en móvil */}
+        <aside className="hidden md:block">
+          <Sidebar className="border-r border-white/5 bg-[#0a0a0a]">
+            <SidebarHeader className="p-6">
+              <h2 className="text-2xl font-black tracking-tighter">
+                <span className="text-foreground">Smash</span>
+                <span className="text-primary">BURGER</span>
+              </h2>
+              <p className="text-[10px] text-muted-foreground font-bold uppercase tracking-[0.2em] opacity-50">Sistema de Pedidos</p>
+            </SidebarHeader>
 
-          <SidebarContent className="px-3">
-            <SidebarGroup>
-              <SidebarMenu>
-                <SidebarGroupLabel className="text-muted-foreground/50 font-bold tracking-widest text-[10px] uppercase">
-                  Pedidos
-                </SidebarGroupLabel>
-                {[
-                  { id: "todos", label: "Activos", icon: LayoutDashboard, count: pendingCount + preparingCount, color: "text-primary" },
-                  { id: "pendiente", label: "Nuevos", icon: Clock, count: pendingCount, color: "text-yellow-400" },
-                  { id: "preparando", label: "Preparando", icon: ChefHat, count: preparingCount, color: "text-blue-400" },
-                  { id: "completado", label: "Historial", icon: History, count: completedCount, color: "text-green-400" },
-                ].map((item) => (
-                  <SidebarMenuItem key={item.id}>
+            <SidebarContent className="px-3">
+              <SidebarGroup>
+                <SidebarMenu>
+                  <SidebarGroupLabel className="text-muted-foreground/50 font-bold tracking-widest text-[10px] uppercase">
+                    Pedidos
+                  </SidebarGroupLabel>
+                  {[
+                    { id: "todos", label: "Activos", icon: LayoutDashboard, count: pendingCount + preparingCount, color: "text-primary" },
+                    { id: "pendiente", label: "Nuevos", icon: Clock, count: pendingCount, color: "text-yellow-400" },
+                    { id: "preparando", label: "Preparando", icon: ChefHat, count: preparingCount, color: "text-blue-400" },
+                    { id: "completado", label: "Historial", icon: History, count: completedCount, color: "text-green-400" },
+                  ].map((item) => (
+                    <SidebarMenuItem key={item.id}>
+                      <SidebarMenuButton
+                        onClick={() => { setActiveTab("pedidos"); setFiltro(item.id as any); }}
+                        isActive={activeTab === "pedidos" && filtro === item.id}
+                        className={cn(
+                          "h-12 px-4 rounded-xl transition-all duration-300",
+                          activeTab === "pedidos" && filtro === item.id ? "bg-primary text-primary-foreground font-bold shadow-lg shadow-primary/20" : "hover:bg-white/5 text-muted-foreground"
+                        )}
+                      >
+                        <item.icon className={cn("w-5 h-5 mr-3", activeTab === "pedidos" && filtro === item.id ? "text-primary-foreground" : item.color)} />
+                        <span className="flex-1">{item.label}</span>
+                        {item.count > 0 && (
+                          <span className={cn(
+                            "px-2 py-0.5 rounded-full text-[10px] font-black",
+                            activeTab === "pedidos" && filtro === item.id ? "bg-black/20 text-primary-foreground" : "bg-white/10 text-foreground"
+                          )}>
+                            {item.count}
+                          </span>
+                        )}
+                      </SidebarMenuButton>
+                    </SidebarMenuItem>
+                  ))}
+
+                  <SidebarGroupLabel className="text-muted-foreground/50 font-bold tracking-widest text-[10px] uppercase mt-4">
+                    Administración
+                  </SidebarGroupLabel>
+                  <SidebarMenuItem>
                     <SidebarMenuButton
-                      onClick={() => { setActiveTab("pedidos"); setFiltro(item.id as any); }}
-                      isActive={activeTab === "pedidos" && filtro === item.id}
+                      onClick={() => setActiveTab("menu")}
+                      isActive={activeTab === "menu"}
                       className={cn(
                         "h-12 px-4 rounded-xl transition-all duration-300",
-                        activeTab === "pedidos" && filtro === item.id ? "bg-primary text-primary-foreground font-bold shadow-lg shadow-primary/20" : "hover:bg-white/5 text-muted-foreground"
+                        activeTab === "menu" ? "bg-primary text-primary-foreground font-bold shadow-lg shadow-primary/20" : "hover:bg-white/5 text-muted-foreground"
                       )}
                     >
-                      <item.icon className={cn("w-5 h-5 mr-3", activeTab === "pedidos" && filtro === item.id ? "text-primary-foreground" : item.color)} />
-                      <span className="flex-1">{item.label}</span>
-                      {item.count > 0 && (
-                        <span className={cn(
-                          "px-2 py-0.5 rounded-full text-[10px] font-black",
-                          activeTab === "pedidos" && filtro === item.id ? "bg-black/20 text-primary-foreground" : "bg-white/10 text-foreground"
-                        )}>
-                          {item.count}
-                        </span>
-                      )}
+                      <Utensils className={cn("w-5 h-5 mr-3", activeTab === "menu" ? "text-primary-foreground" : "text-muted-foreground")} />
+                      <span className="flex-1">Gestionar Menú</span>
                     </SidebarMenuButton>
                   </SidebarMenuItem>
-                ))}
+                  <SidebarMenuItem>
+                    <SidebarMenuButton
+                      onClick={() => setActiveTab("bot")}
+                      isActive={activeTab === "bot"}
+                      className={cn(
+                        "h-12 px-4 rounded-xl transition-all duration-300 mt-2",
+                        activeTab === "bot" ? "bg-primary text-primary-foreground font-bold shadow-lg shadow-primary/20" : "hover:bg-white/5 text-muted-foreground"
+                      )}
+                    >
+                      <Smartphone className={cn("w-5 h-5 mr-3", activeTab === "bot" ? "text-primary-foreground" : "text-muted-foreground")} />
+                      <span className="flex-1">WhatsApp Bot</span>
+                    </SidebarMenuButton>
+                  </SidebarMenuItem>
+                  <SidebarMenuItem>
+                    <SidebarMenuButton
+                      onClick={() => setActiveTab("stats")}
+                      isActive={activeTab === "stats"}
+                      className={cn(
+                        "h-12 px-4 rounded-xl transition-all duration-300 mt-2",
+                        activeTab === "stats" ? "bg-primary text-primary-foreground font-bold shadow-lg shadow-primary/20" : "hover:bg-white/5 text-muted-foreground"
+                      )}
+                    >
+                      <LayoutDashboard className={cn("w-5 h-5 mr-3", activeTab === "stats" ? "text-primary-foreground" : "text-muted-foreground")} />
+                      <span className="flex-1">Estadísticas</span>
+                    </SidebarMenuButton>
+                  </SidebarMenuItem>
+                </SidebarMenu>
+              </SidebarGroup>
+            </SidebarContent>
 
-                <SidebarGroupLabel className="text-muted-foreground/50 font-bold tracking-widest text-[10px] uppercase mt-4">
-                  Administración
-                </SidebarGroupLabel>
-                <SidebarMenuItem>
-                  <SidebarMenuButton
-                    onClick={() => setActiveTab("menu")}
-                    isActive={activeTab === "menu"}
-                    className={cn(
-                      "h-12 px-4 rounded-xl transition-all duration-300",
-                      activeTab === "menu" ? "bg-primary text-primary-foreground font-bold shadow-lg shadow-primary/20" : "hover:bg-white/5 text-muted-foreground"
-                    )}
-                  >
-                    <Utensils className={cn("w-5 h-5 mr-3", activeTab === "menu" ? "text-primary-foreground" : "text-muted-foreground")} />
-                    <span className="flex-1">Gestionar Menú</span>
-                  </SidebarMenuButton>
-                </SidebarMenuItem>
-                <SidebarMenuItem>
-                  <SidebarMenuButton
-                    onClick={() => setActiveTab("bot")}
-                    isActive={activeTab === "bot"}
-                    className={cn(
-                      "h-12 px-4 rounded-xl transition-all duration-300 mt-2",
-                      activeTab === "bot" ? "bg-primary text-primary-foreground font-bold shadow-lg shadow-primary/20" : "hover:bg-white/5 text-muted-foreground"
-                    )}
-                  >
-                    <Smartphone className={cn("w-5 h-5 mr-3", activeTab === "bot" ? "text-primary-foreground" : "text-muted-foreground")} />
-                    <span className="flex-1">WhatsApp Bot</span>
-                  </SidebarMenuButton>
-                </SidebarMenuItem>
-                <SidebarMenuItem>
-                  <SidebarMenuButton
-                    onClick={() => setActiveTab("stats")}
-                    isActive={activeTab === "stats"}
-                    className={cn(
-                      "h-12 px-4 rounded-xl transition-all duration-300 mt-2",
-                      activeTab === "stats" ? "bg-primary text-primary-foreground font-bold shadow-lg shadow-primary/20" : "hover:bg-white/5 text-muted-foreground"
-                    )}
-                  >
-                    <LayoutDashboard className={cn("w-5 h-5 mr-3", activeTab === "stats" ? "text-primary-foreground" : "text-muted-foreground")} />
-                    <span className="flex-1">Estadísticas</span>
-                  </SidebarMenuButton>
-                </SidebarMenuItem>
-              </SidebarMenu>
-            </SidebarGroup>
-          </SidebarContent>
+            <SidebarFooter className="p-4">
+              <button
+                onClick={logout}
+                className="w-full h-12 flex items-center px-4 gap-3 rounded-xl border border-white/5 text-muted-foreground hover:bg-red-500/10 hover:text-red-500 hover:border-red-500/20 transition-all font-bold text-sm"
+              >
+                <LogOut className="w-4 h-4" />
+                Cerrar Sesión
+              </button>
+            </SidebarFooter>
+          </Sidebar>
+        </aside>
 
-          <SidebarFooter className="p-4">
+        {/* Navigation Móvil (Bottom Bar) */}
+        <nav className="md:hidden fixed bottom-0 left-0 right-0 z-50 bg-[#0a0a0a]/90 backdrop-blur-xl border-t border-white/10 px-4 py-2">
+          <div className="flex justify-around items-center h-14">
+            {[
+              { id: "pedidos", label: "Pedidos", icon: ShoppingBag },
+              { id: "menu", label: "Menú", icon: Utensils },
+              { id: "bot", label: "Bot", icon: Smartphone },
+              { id: "stats", label: "Caja", icon: LayoutDashboard },
+            ].map((tab) => (
+              <button
+                key={tab.id}
+                onClick={() => setActiveTab(tab.id as any)}
+                className={cn(
+                  "flex flex-col items-center justify-center gap-1 transition-all px-3 py-1 rounded-xl",
+                  activeTab === tab.id ? "text-primary scale-110" : "text-muted-foreground opacity-60"
+                )}
+              >
+                <tab.icon className="w-5 h-5" />
+                <span className="text-[9px] font-black uppercase tracking-widest">{tab.label}</span>
+                {tab.id === "pedidos" && pendingCount > 0 && (
+                  <span className="absolute top-1 ml-4 flex h-4 w-4">
+                    <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-primary opacity-75"></span>
+                    <span className="relative inline-flex rounded-full h-4 w-4 bg-primary text-[8px] font-black items-center justify-center text-primary-foreground">
+                      {pendingCount}
+                    </span>
+                  </span>
+                )}
+              </button>
+            ))}
             <button
               onClick={logout}
-              className="w-full h-12 flex items-center px-4 gap-3 rounded-xl border border-white/5 text-muted-foreground hover:bg-red-500/10 hover:text-red-500 hover:border-red-500/20 transition-all font-bold text-sm"
+              className="flex flex-col items-center justify-center gap-1 text-muted-foreground opacity-60 px-3 py-1"
             >
-              <LogOut className="w-4 h-4" />
-              Cerrar Sesión
+              <LogOut className="w-5 h-5" />
+              <span className="text-[9px] font-black uppercase tracking-widest">Salir</span>
             </button>
-          </SidebarFooter>
-        </Sidebar>
+          </div>
+        </nav>
 
-        <SidebarInset className="bg-[#050505] flex-1">
+        <SidebarInset className="bg-[#050505] flex-1 min-w-0">
           {/* Main Header */}
-          <header className="h-20 border-b border-white/5 bg-[#0a0a0a]/80 backdrop-blur-xl sticky top-0 z-20 px-8 flex items-center justify-between">
-            <div>
-              <h1 className="text-xl font-black text-foreground">
-                {activeTab === "pedidos" ? "Panel de Control" : activeTab === "menu" ? "Gestión de Menú" : activeTab === "bot" ? "Configuración del Bot" : "Estadísticas de Ventas"}
-              </h1>
-              <p className="text-xs text-muted-foreground font-medium">
-                {activeTab === "pedidos" ? "Gestión de pedidos en tiempo real" : activeTab === "menu" ? "Edita precios y disponibilidad" : activeTab === "bot" ? "Controla la conexión de WhatsApp" : "Resumen de rendimiento del negocio"}
-              </p>
+          <header className="min-h-20 border-b border-white/5 bg-[#0a0a0a]/80 backdrop-blur-xl sticky top-0 z-20 px-4 md:px-8 py-4 flex flex-col md:flex-row md:items-center justify-between gap-4">
+            <div className="flex items-center justify-between md:block">
+              <div>
+                <h1 className="text-lg md:text-xl font-black text-foreground">
+                  {activeTab === "pedidos" ? "Panel de Control" : activeTab === "menu" ? "Gestión de Menú" : activeTab === "bot" ? "Configuración del Bot" : "Estadísticas de Ventas"}
+                </h1>
+                <p className="hidden md:block text-xs text-muted-foreground font-medium">
+                  {activeTab === "pedidos" ? "Gestión de pedidos en tiempo real" : activeTab === "menu" ? "Edita precios y disponibilidad" : activeTab === "bot" ? "Controla la conexión de WhatsApp" : "Resumen de rendimiento del negocio"}
+                </p>
+              </div>
+              <button
+                onClick={refresh}
+                className="md:hidden w-10 h-10 rounded-lg bg-white/5 border border-white/10 flex items-center justify-center text-muted-foreground active:scale-95 transition-all"
+              >
+                <RefreshCw className={cn("w-4 h-4", loading && "animate-spin")} />
+              </button>
             </div>
 
-            <div className="flex items-center gap-4">
-              <div className="flex items-center gap-2 mr-4 bg-white/5 px-4 py-2 rounded-xl border border-white/10">
+            <div className="flex flex-wrap items-center gap-3">
+              <div className="flex items-center gap-2 bg-white/5 px-3 py-1.5 rounded-xl border border-white/10 shrink-0">
                 <span className={cn("w-2 h-2 rounded-full", isOpen ? "bg-green-500 animate-pulse" : "bg-red-500")}></span>
-                <span className="text-[10px] font-black uppercase tracking-widest text-white/70">Local {isOpen ? 'Abierto' : 'Cerrado'}</span>
+                <span className="text-[9px] md:text-[10px] font-black uppercase tracking-widest text-white/70">Local {isOpen ? 'Abierto' : 'Cerrado'}</span>
                 <button
                   onClick={toggleStoreStatus}
                   className={cn(
-                    "ml-2 px-3 py-1 rounded-lg text-[9px] font-black uppercase transition-all border",
+                    "ml-1 px-2 py-0.5 rounded-lg text-[8px] md:text-[9px] font-black uppercase transition-all border",
                     isOpen ? "bg-red-500/10 text-red-500 border-red-500/30 hover:bg-red-500/20" : "bg-green-500/10 text-green-500 border-green-500/30 hover:bg-green-500/20"
                   )}
                 >
                   {isOpen ? 'Cerrar' : 'Abrir'}
                 </button>
               </div>
+              
               {activeTab === "pedidos" && (
-                <div className="flex items-center gap-4">
-                  <div className="bg-white/5 rounded-lg p-1 flex">
+                <div className="flex items-center gap-2 ml-auto md:ml-0">
+                  <div className="hidden md:flex bg-white/5 rounded-lg p-1">
                     <button
                       onClick={() => setViewMode("grid")}
                       className={cn("p-1.5 rounded-md transition-all", viewMode === "grid" ? "bg-primary text-primary-foreground" : "text-muted-foreground hover:text-foreground")}
@@ -395,15 +450,13 @@ export function AdminPanel() {
                     </button>
                   </div>
 
-                  <div className="h-8 w-[1px] bg-white/10" />
-
-                  <div className="flex gap-1 bg-white/5 p-1 rounded-lg">
+                  <div className="flex gap-1 bg-white/5 p-1 rounded-lg overflow-x-auto no-scrollbar">
                     {(["todos", "pendiente", "preparando"] as const).map((s) => (
                       <button
                         key={s}
                         onClick={() => setFiltro(s)}
                         className={cn(
-                          "px-3 py-1.5 rounded-md text-[10px] font-black uppercase tracking-widest transition-all",
+                          "px-2.5 md:px-3 py-1.5 rounded-md text-[9px] md:text-[10px] font-black uppercase tracking-widest transition-all whitespace-nowrap",
                           filtro === s ? "bg-white/10 text-white shadow-sm" : "text-muted-foreground hover:text-white"
                         )}
                       >
@@ -414,7 +467,7 @@ export function AdminPanel() {
 
                   <button
                     onClick={refresh}
-                    className="w-10 h-10 rounded-lg bg-white/5 border border-white/10 flex items-center justify-center hover:bg-white/10 transition-all text-muted-foreground"
+                    className="hidden md:flex w-10 h-10 rounded-lg bg-white/5 border border-white/10 items-center justify-center hover:bg-white/10 transition-all text-muted-foreground"
                   >
                     <RefreshCw className={cn("w-4 h-4", loading && "animate-spin")} />
                   </button>
@@ -423,24 +476,24 @@ export function AdminPanel() {
             </div>
           </header>
 
-          <div className="p-8 space-y-8">
+          <div className="p-4 md:p-8 space-y-6 md:space-y-8">
             {activeTab === "pedidos" ? (
               <>
                 {/* Stats Grid */}
-                <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
+                <div className="grid grid-cols-2 lg:grid-cols-4 gap-3 md:gap-4">
                   {[
                     { label: "Nuevos", value: pendingCount, icon: Clock, color: "text-yellow-400", bg: "bg-yellow-400/10", border: "border-yellow-400/20" },
                     { label: "Preparando", value: preparingCount, icon: ChefHat, color: "text-blue-400", bg: "bg-blue-400/10", border: "border-blue-400/20" },
                     { label: "Completados", value: completedCount, icon: CheckCircle, color: "text-green-400", bg: "bg-green-400/10", border: "border-green-400/20" },
-                    { label: "Ventas", value: `$${totalSales.toLocaleString("es-AR")}`, icon: DollarSign, color: "text-primary", bg: "bg-primary/10", border: "border-primary/20" },
+                    { label: "Ventas Hoy", value: `$${totalHoy.toLocaleString("es-AR")}`, icon: DollarSign, color: "text-primary", bg: "bg-primary/10", border: "border-primary/20" },
                   ].map((stat, i) => (
-                    <div key={i} className={cn("p-5 rounded-2xl border bg-[#0a0a0a] flex items-center gap-4 transition-all hover:scale-[1.02]", stat.border)}>
-                      <div className={cn("w-12 h-12 rounded-xl flex items-center justify-center", stat.bg)}>
-                        <stat.icon className={cn("w-6 h-6", stat.color)} />
+                    <div key={i} className={cn("p-3 md:p-5 rounded-xl md:rounded-2xl border bg-[#0a0a0a] flex items-center gap-3 md:gap-4 transition-all active:scale-95", stat.border)}>
+                      <div className={cn("w-8 h-8 md:w-12 md:h-12 rounded-lg md:rounded-xl flex items-center justify-center shrink-0", stat.bg)}>
+                        <stat.icon className={cn("w-4 h-4 md:w-6 md:h-6", stat.color)} />
                       </div>
-                      <div>
-                        <p className="text-[10px] font-black uppercase tracking-widest text-muted-foreground">{stat.label}</p>
-                        <p className={cn("text-2xl font-black mt-0.5 tracking-tighter", stat.color)}>{stat.value}</p>
+                      <div className="min-w-0">
+                        <p className="text-[8px] md:text-[10px] font-black uppercase tracking-widest text-muted-foreground truncate">{stat.label}</p>
+                        <p className={cn("text-base md:text-2xl font-black mt-0.5 tracking-tighter truncate", stat.color)}>{stat.value}</p>
                       </div>
                     </div>
                   ))}
@@ -448,10 +501,10 @@ export function AdminPanel() {
 
                 {/* Orange Alert Bar */}
                 {pendingCount > 0 && (
-                  <div className="bg-orange-500/10 border border-orange-500/20 rounded-xl p-4 flex items-center justify-between text-orange-400">
+                  <div className="bg-orange-500/10 border border-orange-500/20 rounded-xl p-3 md:p-4 flex items-center justify-between text-orange-400">
                     <div className="flex items-center gap-3">
                       <div className="w-2 h-2 rounded-full bg-orange-500 animate-pulse" />
-                      <p className="font-bold text-sm">{pendingCount} {pendingCount === 1 ? 'pedido nuevo esperando' : 'pedidos nuevos esperando'}</p>
+                      <p className="font-bold text-xs md:text-sm">{pendingCount} {pendingCount === 1 ? 'pedido nuevo esperando' : 'pedidos nuevos esperando'}</p>
                     </div>
                     <Clock className="w-4 h-4 opacity-50" />
                   </div>
@@ -459,20 +512,20 @@ export function AdminPanel() {
 
                 {/* Orders Grid */}
                 {loading ? (
-                  <div className="flex flex-col items-center justify-center py-32 opacity-20">
-                    <RefreshCw className="w-12 h-12 animate-spin mb-4" />
-                    <p className="font-black uppercase tracking-widest text-sm">Cargando Pedidos</p>
+                  <div className="flex flex-col items-center justify-center py-20 md:py-32 opacity-20">
+                    <RefreshCw className="w-10 h-10 md:w-12 md:h-12 animate-spin mb-4" />
+                    <p className="font-black uppercase tracking-widest text-[10px] md:text-sm">Cargando Pedidos</p>
                   </div>
                 ) : pedidosFiltrados.length === 0 ? (
-                  <div className="flex flex-col items-center justify-center py-32 border-2 border-dashed border-white/5 rounded-3xl opacity-20">
-                    <ShoppingBag className="w-16 h-16 mb-4" />
-                    <p className="font-black uppercase tracking-widest text-sm text-center">
+                  <div className="flex flex-col items-center justify-center py-20 md:py-32 border-2 border-dashed border-white/5 rounded-3xl opacity-20">
+                    <ShoppingBag className="w-12 h-12 md:w-16 md:h-16 mb-4" />
+                    <p className="font-black uppercase tracking-widest text-[10px] md:text-sm text-center">
                       No hay pedidos {filtro !== "todos" ? `en "${filtro}"` : "activos"}
                     </p>
                   </div>
                 ) : (
                   <div className={cn(
-                    "grid gap-6",
+                    "grid gap-4 md:gap-6",
                     viewMode === "grid" ? "grid-cols-1 md:grid-cols-2 lg:grid-cols-3" : "grid-cols-1"
                   )}>
                     {pedidosFiltrados.map((order) => (

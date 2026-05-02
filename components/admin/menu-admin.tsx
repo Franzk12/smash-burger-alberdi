@@ -59,7 +59,8 @@ export function MenuAdmin() {
       </div>
 
       <div className="bg-[#111111] border border-white/5 rounded-2xl overflow-hidden shadow-2xl">
-        <div className="overflow-x-auto">
+        {/* Desktop Table View */}
+        <div className="hidden md:block overflow-x-auto">
           <table className="w-full text-sm text-left">
             <thead className="text-xs text-muted-foreground uppercase bg-[#1a1a1a] border-b border-white/5">
               <tr>
@@ -113,15 +114,57 @@ export function MenuAdmin() {
                   </td>
                 </tr>
               ))}
-              {products.length === 0 && (
-                <tr>
-                  <td colSpan={5} className="px-6 py-12 text-center text-muted-foreground">
-                    No hay productos en el menú. Empieza agregando uno.
-                  </td>
-                </tr>
-              )}
             </tbody>
           </table>
+        </div>
+
+        {/* Mobile Card View */}
+        <div className="md:hidden divide-y divide-white/5">
+          {products.map((product) => (
+            <div key={product.id} className="p-4 flex flex-col gap-4 active:bg-white/5 transition-colors">
+              <div className="flex items-center gap-4">
+                {product.image_url ? (
+                  <img src={product.image_url} alt={product.name} className="w-16 h-16 rounded-xl object-cover bg-black border border-white/10" />
+                ) : (
+                  <div className="w-16 h-16 rounded-xl bg-white/5 flex items-center justify-center text-muted-foreground text-[10px] font-bold border border-white/10 text-center leading-tight">
+                    Sin foto
+                  </div>
+                )}
+                <div className="flex-1 min-w-0">
+                  <div className="flex justify-between items-start">
+                    <p className="font-black text-foreground text-lg uppercase leading-tight truncate">{product.name}</p>
+                    <span className="text-primary font-black text-lg ml-2 shrink-0">${product.price.toLocaleString("es-AR")}</span>
+                  </div>
+                  <p className="text-xs text-muted-foreground capitalize font-bold mt-1 tracking-widest">{product.category}</p>
+                </div>
+              </div>
+              
+              <div className="flex items-center justify-between gap-3 pt-2">
+                <button
+                  onClick={() => updateProduct(product.id, { available: !product.available })}
+                  className={cn(
+                    "flex-1 py-2 text-[10px] font-black uppercase tracking-widest rounded-xl transition-all border",
+                    product.available ? "bg-green-500/10 text-green-400 border-green-500/20" : "bg-red-500/10 text-red-400 border-red-500/20"
+                  )}
+                >
+                  {product.available ? "🟢 Activo" : "🔴 Pausado"}
+                </button>
+                <div className="flex gap-2">
+                  <button onClick={() => openEditModal(product)} className="w-10 h-10 flex items-center justify-center bg-white/5 border border-white/10 rounded-xl text-muted-foreground active:text-primary active:border-primary transition-all">
+                    <Edit2 className="w-4 h-4" />
+                  </button>
+                  <button onClick={() => { if(confirm("¿Seguro que quieres eliminar este producto?")) deleteProduct(product.id) }} className="w-10 h-10 flex items-center justify-center bg-red-500/5 border border-red-500/10 rounded-xl text-muted-foreground active:text-red-400 active:border-red-400 transition-all">
+                    <Trash2 className="w-4 h-4" />
+                  </button>
+                </div>
+              </div>
+            </div>
+          ))}
+          {products.length === 0 && (
+            <div className="p-12 text-center text-muted-foreground text-sm font-medium italic">
+              No hay productos todavía.
+            </div>
+          )}
         </div>
       </div>
 

@@ -125,7 +125,7 @@ function MenuContent() {
                     {milanesas.map((item) => (
                       <div key={item.id} className="bg-card/50 backdrop-blur-sm border border-border/50 rounded-2xl p-5 hover:border-primary transition-all duration-500 group hover:shadow-[0_20px_50px_rgba(0,0,0,0.15)] flex flex-col overflow-hidden">
                         {item.image_url && (
-                           <div className="-mx-5 -mt-5 mb-5 h-44 overflow-hidden bg-muted border-b border-border/50">
+                          <div className="-mx-5 -mt-5 mb-5 h-44 overflow-hidden bg-muted border-b border-border/50">
                             <img src={item.image_url} alt={item.name} className="w-full h-full object-cover transition-transform duration-700 group-hover:scale-110" />
                           </div>
                         )}
