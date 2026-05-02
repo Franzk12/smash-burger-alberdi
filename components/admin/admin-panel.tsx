@@ -9,7 +9,8 @@ import {
   ShoppingBag, Clock, ChefHat, CheckCircle, Truck,
   LogOut, RefreshCw, MapPin, Store, Banknote, CreditCard,
   AlertCircle, LayoutDashboard, ListFilter, History,
-  DollarSign, MoreVertical, LayoutGrid, List, Utensils, Printer
+  DollarSign, MoreVertical, LayoutGrid, List, Utensils, Printer,
+  Bell, Volume2
 } from "lucide-react"
 import {
   Sidebar,
@@ -261,14 +262,24 @@ export function AdminPanel() {
   const [viewMode, setViewMode] = useState<"grid" | "list">("grid")
   const [activeTab, setActiveTab] = useState<"pedidos" | "menu" | "bot" | "stats">("pedidos")
   const [lastOrderCount, setLastOrderCount] = useState(orders.length);
+  const [audioEnabled, setAudioEnabled] = useState(false);
+
+  const playSound = () => {
+    const audio = new Audio("https://assets.mixkit.co/active_storage/sfx/2869/2869-preview.mp3");
+    audio.play()
+      .then(() => setAudioEnabled(true))
+      .catch(e => {
+        console.error("Audio blocked:", e);
+        setAudioEnabled(false);
+      });
+  };
 
   useEffect(() => {
-    if (orders.length > lastOrderCount) {
-      const audio = new Audio("https://assets.mixkit.co/active_storage/sfx/2869/2869-preview.mp3");
-      audio.play().catch(e => console.error("Error playing sound:", e));
+    if (orders.length > lastOrderCount && audioEnabled) {
+      playSound();
     }
     setLastOrderCount(orders.length);
-  }, [orders]);
+  }, [orders, audioEnabled]);
 
   const pendingCount = orders.filter(o => o.status === "pendiente").length
   const preparingCount = orders.filter(o => o.status === "preparando").length
@@ -462,6 +473,22 @@ export function AdminPanel() {
                   {isOpen ? 'Cerrar' : 'Abrir'}
                 </button>
               </div>
+
+              {/* Botón de Sonido */}
+              <button
+                onClick={playSound}
+                className={cn(
+                  "flex items-center gap-2 px-3 py-1.5 rounded-xl border transition-all active:scale-95",
+                  audioEnabled 
+                    ? "bg-green-500/10 border-green-500/30 text-green-500" 
+                    : "bg-yellow-500/10 border-yellow-500/30 text-yellow-500 animate-pulse shadow-[0_0_15px_rgba(234,179,8,0.2)]"
+                )}
+              >
+                {audioEnabled ? <Volume2 className="w-4 h-4" /> : <Bell className="w-4 h-4 animate-bounce" />}
+                <span className="text-[9px] md:text-[10px] font-black uppercase tracking-widest">
+                  {audioEnabled ? 'Sonido Activo' : 'Activar Sonido'}
+                </span>
+              </button>
               
               {activeTab === "pedidos" && (
                 <div className="flex items-center gap-2 ml-auto md:ml-0">
