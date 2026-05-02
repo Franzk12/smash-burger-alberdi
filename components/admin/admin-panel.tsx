@@ -1,6 +1,6 @@
 "use client"
 
-import { useState } from "react"
+import { useState, useEffect } from "react"
 import { useOrders } from "@/lib/orders-context"
 import { useAuth } from "@/lib/auth-context"
 import { useProducts } from "@/lib/products-context"
@@ -260,6 +260,15 @@ export function AdminPanel() {
   const [filtro, setFiltro] = useState<OrderStatus | "todos">("todos")
   const [viewMode, setViewMode] = useState<"grid" | "list">("grid")
   const [activeTab, setActiveTab] = useState<"pedidos" | "menu" | "bot" | "stats">("pedidos")
+  const [lastOrderCount, setLastOrderCount] = useState(orders.length);
+
+  useEffect(() => {
+    if (orders.length > lastOrderCount) {
+      const audio = new Audio("https://assets.mixkit.co/active_storage/sfx/2869/2869-preview.mp3");
+      audio.play().catch(e => console.error("Error playing sound:", e));
+    }
+    setLastOrderCount(orders.length);
+  }, [orders]);
 
   const pendingCount = orders.filter(o => o.status === "pendiente").length
   const preparingCount = orders.filter(o => o.status === "preparando").length
