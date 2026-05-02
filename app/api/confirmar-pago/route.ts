@@ -1,3 +1,4 @@
+import { NextRequest, NextResponse } from "next/server";
 import { supabase, supabaseAdmin } from "@/lib/supabase";
 
 export async function POST(req: NextRequest) {
