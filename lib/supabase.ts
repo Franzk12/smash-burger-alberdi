@@ -7,4 +7,6 @@ export const supabase = createClient(supabaseUrl, supabaseAnonKey)
 
 // Cliente administrativo (solo para uso en el SERVIDOR)
 const supabaseServiceKey = process.env.SUPABASE_SERVICE_ROLE_KEY || ''
-export const supabaseAdmin = createClient(supabaseUrl, supabaseServiceKey)
+export const supabaseAdmin = (typeof window === 'undefined' && supabaseServiceKey) 
+  ? createClient(supabaseUrl, supabaseServiceKey) 
+  : null as any
