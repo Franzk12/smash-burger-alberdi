@@ -22,13 +22,14 @@ export function CheckoutModal({ onClose, onSuccess }: Props) {
   const [zona, setZona] = useState<"alberdi" | "fuera" | "">("");
   const [nombre, setNombre] = useState("");
   const [direccion, setDireccion] = useState("");
+  const [referencia, setReferencia] = useState("");
   const [telefono, setTelefono] = useState("");
   const [pago, setPago] = useState<"efectivo" | "mercadopago" | "transferencia" | "">("");
 
   const deliveryFee = zona === "fuera" ? DELIVERY_FEE_OUTSIDE : 0;
   const totalFinal = total + deliveryFee;
 
-  const ALIAS_CBU = "smash.burger.alberdi"; // REEMPLAZA CON TU ALIAS REAL
+  const ALIAS_CBU = "Smashburgeralb";
   const TITULAR = "Smash Burger Alberdi";
 
   function buildWhatsAppMessage() {
@@ -44,34 +45,24 @@ export function CheckoutModal({ onClose, onSuccess }: Props) {
       return itemText;
     });
 
-    const modalidadTexto =
-      modalidad === "retiro"
-        ? "🏪 *Retiro en local*"
-        : `🛵 *Delivery* — ${direccion} (${zona === "alberdi" ? "zona Alberdi, envío gratis" : "fuera de zona, +$2000"})`;
-
-    let pagoTexto = "";
-    if (pago === "efectivo") pagoTexto = "💵 Efectivo al recibir";
-    if (pago === "mercadopago") pagoTexto = "📱 MercadoPago (Pago online)";
-    if (pago === "transferencia") pagoTexto = "🏦 Transferencia Bancaria (Envío comprobante)";
-
     const msg = [
-      `🍔 *NUEVO PEDIDO — SMASH BURGER*`,
-      ``,
+      `🍔 *NUEVO PEDIDO - SMASH BURGER*`,
+      `--------------------------------`,
       `👤 *Cliente:* ${nombre}`,
-      `📱 *Teléfono:* ${telefono}`,
-      ``,
-      `*Productos:*`,
+      `📞 *Teléfono:* ${telefono}`,
+      `📍 *Modalidad:* ${modalidad === "delivery" ? "🚀 Envío a Domicilio" : "🏠 Retiro en Local"}`,
+      modalidad === "delivery" ? `🏠 *Dirección:* ${direccion}` : "",
+      modalidad === "delivery" && referencia ? `📝 *Ref/Lote:* ${referencia}` : "",
+      `--------------------------------`,
+      `📦 *Detalle:*`,
       ...lineas,
-      ``,
-      modalidadTexto,
-      `💳 *Pago:* ${pagoTexto}`,
-      ``,
-      `*Subtotal:* $${total.toLocaleString("es-AR")}`,
+      `--------------------------------`,
       deliveryFee > 0 ? `*Envío:* $${deliveryFee.toLocaleString("es-AR")}` : "",
       `*TOTAL: $${totalFinal.toLocaleString("es-AR")}*`,
+      `💰 *Pago:* ${pago === "efectivo" ? "Efectivo" : pago === "transferencia" ? "Transferencia" : "Mercado Pago"}`,
       pago === "transferencia" ? `\n⚠️ *Enviaré el comprobante a este chat.*` : ""
     ]
-      .filter((l) => l !== undefined)
+      .filter((l) => l !== "")
       .join("\n");
 
     return encodeURIComponent(msg);
@@ -92,6 +83,7 @@ export function CheckoutModal({ onClose, onSuccess }: Props) {
           total: totalFinal,
           modalidad,
           direccion,
+          referencia,
           zona,
           pago: pagoTipo,
         }),
@@ -107,7 +99,6 @@ export function CheckoutModal({ onClose, onSuccess }: Props) {
       setLoadingMP(true);
       setErrorMP("");
       try {
-        // 1. Guardamos el pedido primero para tener el ID real
         const pedidoData = await guardarPedido("mercadopago_pendiente");
         const pedidoId = (pedidoData as any)?.id;
 
@@ -115,7 +106,6 @@ export function CheckoutModal({ onClose, onSuccess }: Props) {
           throw new Error("No se pudo generar el pedido");
         }
 
-        // 2. Creamos la preferencia vinculada a ese ID
         const res = await fetch("/api/create-preference", {
           method: "POST",
           headers: { "Content-Type": "application/json" },
@@ -135,7 +125,7 @@ export function CheckoutModal({ onClose, onSuccess }: Props) {
             modalidad,
             direccion,
             zona,
-            orderId: pedidoId, // VINCULACIÓN CRITICA
+            orderId: pedidoId,
           }),
         });
         const data = await res.json();
@@ -163,74 +153,63 @@ export function CheckoutModal({ onClose, onSuccess }: Props) {
   }
 
   return (
-    <div className="fixed inset-0 z-[60] flex items-center justify-center p-4">
-      <div className="absolute inset-0 bg-black/70 backdrop-blur-sm" onClick={onClose} />
+    <div className="fixed inset-0 z-[60] flex items-center justify-center p-4 bg-black/80 backdrop-blur-sm">
+      <div className="bg-card w-full max-w-md rounded-3xl overflow-hidden shadow-2xl border border-white/10 animate-in fade-in zoom-in duration-300">
+        <div className="p-6">
+          <div className="flex items-center justify-between mb-6">
+            <h2 className="text-2xl font-black text-foreground">
+              {step === "confirmado" ? "¡Pedido enviado!" : "Confirmar pedido"}
+            </h2>
+            <button onClick={onClose} className="p-2 hover:bg-white/5 rounded-full transition-colors">
+              <X className="w-6 h-6" />
+            </button>
+          </div>
 
-      <div className="relative bg-card border border-border rounded-2xl w-full max-w-md shadow-2xl overflow-hidden">
-        {/* Header */}
-        <div className="flex items-center justify-between px-6 py-4 border-b border-border">
-          <h2 className="font-bold text-foreground text-lg">
-            {step === "confirmado" ? "¡Pedido enviado!" : "Confirmar pedido"}
-          </h2>
-          <button onClick={onClose} className="p-2 rounded-full hover:bg-secondary transition-colors text-muted-foreground">
-            <X className="w-4 h-4" />
-          </button>
-        </div>
-
-        <div className="px-6 py-5 max-h-[80vh] overflow-y-auto no-scrollbar">
-
-          {/* PASO 1: Modalidad */}
           {step === "modalidad" && (
             <div className="space-y-4">
-              <p className="text-muted-foreground text-sm">¿Cómo querés recibir tu pedido?</p>
-              <div className="grid grid-cols-2 gap-3">
+              <p className="text-muted-foreground text-sm font-medium">¿Cómo preferís recibir tu pedido?</p>
+              <div className="grid grid-cols-2 gap-4">
                 <button
                   onClick={() => setModalidad("retiro")}
-                  className={`flex flex-col items-center gap-2 p-4 rounded-xl border-2 transition-all ${
-                    modalidad === "retiro"
-                      ? "border-primary bg-primary/10"
-                      : "border-border hover:border-primary/50"
+                  className={`flex flex-col items-center gap-3 p-6 rounded-2xl border-2 transition-all group ${
+                    modalidad === "retiro" ? "border-primary bg-primary/10" : "bg-white/5 border-white/10 hover:border-primary/30"
                   }`}
                 >
-                  <Store className={`w-8 h-8 ${modalidad === "retiro" ? "text-primary" : "text-muted-foreground"}`} />
-                  <span className="font-semibold text-sm text-foreground">Retiro</span>
-                  <span className="text-xs text-muted-foreground">en el local</span>
+                  <Store className={`w-8 h-8 transition-transform group-hover:scale-110 ${modalidad === "retiro" ? "text-primary" : "text-muted-foreground"}`} />
+                  <span className="font-bold">Retiro</span>
                 </button>
                 <button
                   onClick={() => setModalidad("delivery")}
-                  className={`flex flex-col items-center gap-2 p-4 rounded-xl border-2 transition-all ${
-                    modalidad === "delivery"
-                      ? "border-primary bg-primary/10"
-                      : "border-border hover:border-primary/50"
+                  className={`flex flex-col items-center gap-3 p-6 rounded-2xl border-2 transition-all group ${
+                    modalidad === "delivery" ? "border-primary bg-primary/10" : "bg-white/5 border-white/10 hover:border-primary/30"
                   }`}
                 >
-                  <MapPin className={`w-8 h-8 ${modalidad === "delivery" ? "text-primary" : "text-muted-foreground"}`} />
-                  <span className="font-semibold text-sm text-foreground">Delivery</span>
-                  <span className="text-xs text-muted-foreground">a domicilio</span>
+                  <MapPin className={`w-8 h-8 transition-transform group-hover:scale-110 ${modalidad === "delivery" ? "text-primary" : "text-muted-foreground"}`} />
+                  <span className="font-bold">Delivery</span>
                 </button>
               </div>
 
               {modalidad === "delivery" && (
-                <div className="space-y-2 pt-1">
-                  <p className="text-sm text-muted-foreground">¿Tu dirección está en Alberdi?</p>
+                <div className="space-y-2 pt-2">
+                  <p className="text-xs font-black uppercase tracking-wider text-muted-foreground">Zona de envío</p>
                   <div className="grid grid-cols-2 gap-2">
                     <button
                       onClick={() => setZona("alberdi")}
-                      className={`py-2 rounded-lg border text-sm font-medium transition-all ${
-                        zona === "alberdi" ? "border-primary bg-primary/10 text-primary" : "border-border text-muted-foreground hover:border-primary/50"
+                      className={`py-3 rounded-xl border text-xs font-bold transition-all ${
+                        zona === "alberdi" ? "bg-primary text-primary-foreground border-primary" : "bg-white/5 border-white/10 text-muted-foreground hover:border-primary/50"
                       }`}
                     >
-                      Sí, zona Alberdi
-                      <span className="block text-xs font-normal">Envío gratis</span>
+                      Barrio Alberdi
+                      <span className="block text-[10px] opacity-70">Envío Gratis</span>
                     </button>
                     <button
                       onClick={() => setZona("fuera")}
-                      className={`py-2 rounded-lg border text-sm font-medium transition-all ${
-                        zona === "fuera" ? "border-primary bg-primary/10 text-primary" : "border-border text-muted-foreground hover:border-primary/50"
+                      className={`py-3 rounded-xl border text-xs font-bold transition-all ${
+                        zona === "fuera" ? "bg-primary text-primary-foreground border-primary" : "bg-white/5 border-white/10 text-muted-foreground hover:border-primary/50"
                       }`}
                     >
-                      No, otra zona
-                      <span className="block text-xs font-normal">+$2.000 envío</span>
+                      Fuera de zona
+                      <span className="block text-[10px] opacity-70">+$2.000 envío</span>
                     </button>
                   </div>
                 </div>
@@ -239,180 +218,173 @@ export function CheckoutModal({ onClose, onSuccess }: Props) {
               <button
                 disabled={!modalidad || (modalidad === "delivery" && !zona)}
                 onClick={() => setStep("datos")}
-                className="w-full bg-primary text-primary-foreground py-3 rounded-lg font-bold disabled:opacity-40 disabled:cursor-not-allowed hover:bg-primary/90 transition-colors mt-2"
+                className="w-full bg-primary text-primary-foreground py-4 rounded-xl font-black disabled:opacity-40 hover:bg-primary/90 transition-all mt-4"
               >
-                Continuar
+                Siguiente
               </button>
             </div>
           )}
 
-          {/* PASO 2: Datos */}
           {step === "datos" && (
             <div className="space-y-4">
-              <p className="text-muted-foreground text-sm">Tus datos para el pedido</p>
-              <div>
-                <label className="text-sm text-muted-foreground mb-1 block">Tu nombre *</label>
+              <div className="space-y-2">
+                <label className="text-xs font-black uppercase tracking-wider text-muted-foreground">Nombre / Familia</label>
                 <input
+                  autoFocus
                   type="text"
                   value={nombre}
                   onChange={(e) => setNombre(e.target.value)}
-                  placeholder="Ej: Juan"
-                  className="w-full bg-secondary border border-border rounded-lg px-4 py-2.5 text-foreground text-sm placeholder:text-muted-foreground focus:outline-none focus:border-primary"
+                  className="w-full bg-white/5 border border-white/10 rounded-xl px-4 py-3 focus:outline-none focus:ring-2 focus:ring-primary/50 transition-all"
+                  placeholder="Ej: Familia Castillo"
                 />
               </div>
-              <div>
-                <label className="text-sm text-muted-foreground mb-1 block">Tu teléfono (WhatsApp) *</label>
+              <div className="space-y-2">
+                <label className="text-xs font-black uppercase tracking-wider text-muted-foreground">Teléfono (WhatsApp)</label>
                 <input
                   type="tel"
                   value={telefono}
                   onChange={(e) => setTelefono(e.target.value)}
-                  placeholder="Ej: 3865123456"
-                  className="w-full bg-secondary border border-border rounded-lg px-4 py-2.5 text-foreground text-sm placeholder:text-muted-foreground focus:outline-none focus:border-primary"
+                  className="w-full bg-white/5 border border-white/10 rounded-xl px-4 py-3 focus:outline-none focus:ring-2 focus:ring-primary/50 transition-all"
+                  placeholder="3865123456"
                 />
               </div>
               {modalidad === "delivery" && (
-                <div>
-                  <label className="text-sm text-muted-foreground mb-1 block">Dirección de entrega *</label>
-                  <input
-                    type="text"
-                    value={direccion}
-                    onChange={(e) => setDireccion(e.target.value)}
-                    placeholder="Ej: San Martín 450, Alberdi"
-                    className="w-full bg-secondary border border-border rounded-lg px-4 py-2.5 text-foreground text-sm placeholder:text-muted-foreground focus:outline-none focus:border-primary"
-                  />
-                </div>
+                <>
+                  <div className="space-y-2">
+                    <label className="text-xs font-black uppercase tracking-wider text-muted-foreground">Dirección</label>
+                    <input
+                      type="text"
+                      value={direccion}
+                      onChange={(e) => setDireccion(e.target.value)}
+                      className="w-full bg-white/5 border border-white/10 rounded-xl px-4 py-3 focus:outline-none focus:ring-2 focus:ring-primary/50 transition-all"
+                      placeholder="Calle y altura"
+                    />
+                  </div>
+                  <div className="space-y-2">
+                    <label className="text-xs font-black uppercase tracking-wider text-muted-foreground">Lote / Referencia (Opcional)</label>
+                    <input
+                      type="text"
+                      value={referencia}
+                      onChange={(e) => setReferencia(e.target.value)}
+                      className="w-full bg-white/5 border border-white/10 rounded-xl px-4 py-3 focus:outline-none focus:ring-2 focus:ring-primary/50 transition-all"
+                      placeholder="Lote 5 / Portón blanco"
+                    />
+                  </div>
+                </>
               )}
-              <div className="flex gap-2 pt-1">
+              <div className="flex gap-3 pt-4">
                 <button
                   onClick={() => setStep("modalidad")}
-                  className="flex-1 border border-border text-muted-foreground py-2.5 rounded-lg text-sm hover:border-primary/50 transition-colors"
+                  className="flex-1 bg-white/5 text-muted-foreground py-4 rounded-xl font-bold hover:bg-white/10 transition-all"
                 >
                   Atrás
                 </button>
                 <button
                   disabled={!nombre || !telefono || (modalidad === "delivery" && !direccion)}
                   onClick={() => setStep("pago")}
-                  className="flex-1 bg-primary text-primary-foreground py-2.5 rounded-lg font-bold text-sm disabled:opacity-40 disabled:cursor-not-allowed hover:bg-primary/90 transition-colors"
+                  className="flex-1 bg-primary text-primary-foreground py-4 rounded-xl font-black disabled:opacity-40 hover:bg-primary/90 transition-all"
                 >
-                  Continuar
+                  Siguiente
                 </button>
               </div>
             </div>
           )}
 
-          {/* PASO 3: Pago */}
           {step === "pago" && (
             <div className="space-y-4">
-              <p className="text-muted-foreground text-sm">¿Cómo querés pagar?</p>
-              <div className="grid grid-cols-1 gap-2">
-                <div className="grid grid-cols-2 gap-2">
-                  <button
-                    onClick={() => setPago("efectivo")}
-                    className={`flex flex-col items-center gap-1 p-3 rounded-xl border-2 transition-all ${
-                      pago === "efectivo" ? "border-primary bg-primary/10" : "border-border hover:border-primary/50"
-                    }`}
-                  >
-                    <Banknote className={`w-6 h-6 ${pago === "efectivo" ? "text-primary" : "text-muted-foreground"}`} />
-                    <span className="font-bold text-xs text-foreground">Efectivo</span>
-                    <span className="text-[10px] text-muted-foreground">Al recibir</span>
-                  </button>
-                  <button
-                    onClick={() => setPago("transferencia")}
-                    className={`flex flex-col items-center gap-1 p-3 rounded-xl border-2 transition-all ${
-                      pago === "transferencia" ? "border-primary bg-primary/10" : "border-border hover:border-primary/50"
-                    }`}
-                  >
-                    <RefreshCw className={`w-6 h-6 ${pago === "transferencia" ? "text-primary" : "text-muted-foreground"}`} />
-                    <span className="font-bold text-xs text-foreground">Transferencia</span>
-                    <span className="text-[10px] text-muted-foreground">Envío de CBU</span>
-                  </button>
-                </div>
+              <p className="text-muted-foreground text-sm font-medium">¿Cómo querés pagar?</p>
+              <div className="grid grid-cols-1 gap-3">
                 <button
-                  onClick={() => setPago("mercadopago")}
-                  className={`flex items-center justify-center gap-3 p-3 rounded-xl border-2 transition-all ${
-                    pago === "mercadopago" ? "border-primary bg-primary/10" : "border-border hover:border-primary/50"
+                  onClick={() => setPago("efectivo")}
+                  className={`flex items-center gap-4 p-4 rounded-2xl border-2 transition-all ${
+                    pago === "efectivo" ? "border-primary bg-primary/10" : "bg-white/5 border-white/10 hover:border-primary/30"
                   }`}
                 >
-                  <CreditCard className={`w-5 h-5 ${pago === "mercadopago" ? "text-primary" : "text-muted-foreground"}`} />
+                  <Banknote className={`w-6 h-6 ${pago === "efectivo" ? "text-primary" : "text-muted-foreground"}`} />
                   <div className="text-left">
-                    <span className="font-bold text-xs text-foreground block">MercadoPago (Tarjeta/Debito)</span>
-                    <span className="text-[10px] text-muted-foreground">Pago online 100% seguro</span>
+                    <p className="font-bold">Efectivo</p>
+                    <p className="text-[10px] text-muted-foreground">Pagás al recibir</p>
+                  </div>
+                </button>
+                <button
+                  onClick={() => setPago("transferencia")}
+                  className={`flex items-center gap-4 p-4 rounded-2xl border-2 transition-all ${
+                    pago === "transferencia" ? "border-primary bg-primary/10" : "bg-white/5 border-white/10 hover:border-primary/30"
+                  }`}
+                >
+                  <RefreshCw className={`w-6 h-6 ${pago === "transferencia" ? "text-primary" : "text-muted-foreground"}`} />
+                  <div className="text-left">
+                    <p className="font-bold">Transferencia</p>
+                    <p className="text-[10px] text-muted-foreground">Te pasamos el Alias</p>
+                  </div>
+                </button>
+                <button
+                  onClick={() => setPago("mercadopago")}
+                  className={`flex items-center gap-4 p-4 rounded-2xl border-2 transition-all ${
+                    pago === "mercadopago" ? "border-primary bg-primary/10" : "bg-white/5 border-white/10 hover:border-primary/30"
+                  }`}
+                >
+                  <CreditCard className={`w-6 h-6 ${pago === "mercadopago" ? "text-primary" : "text-muted-foreground"}`} />
+                  <div className="text-left">
+                    <p className="font-bold">MercadoPago</p>
+                    <p className="text-[10px] text-muted-foreground">Tarjeta / Débito (100% seguro)</p>
                   </div>
                 </button>
               </div>
 
               {pago === "transferencia" && (
-                <div className="bg-primary/5 border border-primary/20 rounded-xl p-4 animate-in fade-in duration-300">
-                  <p className="text-[10px] font-black uppercase tracking-widest text-primary mb-2 text-center">Datos para Transferir</p>
-                  <div className="space-y-1 text-center">
-                    <p className="text-sm font-black text-foreground">{TITULAR}</p>
-                    <p className="text-lg font-black text-primary select-all">{ALIAS_CBU}</p>
-                    <p className="text-[10px] text-muted-foreground italic">Copiá el Alias y hacé el pago en tu App.</p>
-                  </div>
+                <div className="p-4 rounded-2xl bg-primary/10 border border-primary/30 animate-in slide-in-from-top-2 duration-300">
+                  <p className="text-[10px] font-black uppercase tracking-widest text-primary mb-2">Datos para transferir</p>
+                  <p className="text-sm font-bold text-foreground">{TITULAR}</p>
+                  <p className="text-xl font-black text-primary tracking-tight my-1">{ALIAS_CBU}</p>
+                  <p className="text-[10px] text-muted-foreground italic">Copiá el Alias y hacé el pago en tu App.</p>
                 </div>
               )}
 
-              {/* Resumen */}
-              <div className="bg-secondary rounded-lg p-4 space-y-2 text-sm">
-                <div className="flex justify-between text-muted-foreground">
-                  <span>Subtotal</span>
-                  <span>${total.toLocaleString("es-AR")}</span>
-                </div>
-                {deliveryFee > 0 && (
-                  <div className="flex justify-between text-muted-foreground">
-                    <span>Envío (fuera de zona)</span>
-                    <span>${deliveryFee.toLocaleString("es-AR")}</span>
-                  </div>
-                )}
-                {deliveryFee === 0 && modalidad === "delivery" && (
-                  <div className="flex justify-between text-green-400">
-                    <span>Envío</span>
-                    <span>Gratis</span>
-                  </div>
-                )}
-                <div className="flex justify-between font-bold text-foreground text-base border-t border-border pt-2">
-                  <span>Total</span>
-                  <span className="text-primary">${totalFinal.toLocaleString("es-AR")}</span>
-                </div>
-              </div>
+              {errorMP && <p className="text-red-500 text-[10px] font-bold text-center animate-bounce">{errorMP}</p>}
 
-              {errorMP && (
-                <p className="text-destructive text-[10px] text-center font-bold">{errorMP}</p>
-              )}
-              <div className="flex gap-2">
+              <div className="flex gap-3 mt-4">
                 <button
                   onClick={() => setStep("datos")}
-                  className="flex-1 border border-border text-muted-foreground py-2.5 rounded-lg text-sm hover:border-primary/50 transition-colors"
+                  className="flex-1 bg-white/5 text-muted-foreground py-4 rounded-xl font-bold hover:bg-white/10 transition-all"
                 >
                   Atrás
                 </button>
                 <button
                   disabled={!pago || loadingMP}
                   onClick={handleConfirmar}
-                  className="flex-1 bg-primary text-primary-foreground py-2.5 rounded-lg font-bold text-sm disabled:opacity-40 disabled:cursor-not-allowed hover:bg-primary/90 transition-colors"
+                  className="flex-[2] bg-primary text-primary-foreground py-4 rounded-xl font-black disabled:opacity-40 hover:bg-primary/90 shadow-lg shadow-primary/20 transition-all flex items-center justify-center gap-2"
                 >
-                  {loadingMP ? "Conectando..." : pago === "mercadopago" ? "Ir a Pagar" : "Finalizar Pedido"}
+                  {loadingMP ? (
+                    <RefreshCw className="w-5 h-5 animate-spin" />
+                  ) : (
+                    <>
+                      {pago === "mercadopago" ? "Pagar ahora" : "Confirmar pedido"}
+                      <CheckCircle className="w-5 h-5" />
+                    </>
+                  )}
                 </button>
               </div>
             </div>
           )}
 
-          {/* CONFIRMADO */}
           {step === "confirmado" && (
-            <div className="flex flex-col items-center gap-4 py-4 text-center">
-              <CheckCircle className="w-16 h-16 text-primary" />
-              <h3 className="text-xl font-bold text-foreground">¡Pedido enviado!</h3>
-              <p className="text-muted-foreground text-sm">
-                Tu pedido fue enviado por WhatsApp. El local te va a confirmar en minutos y te avisa cuando está listo.
-              </p>
-              <p className="text-xs text-muted-foreground">
-                Tiempo estimado: hasta 30 minutos
-              </p>
+            <div className="text-center py-8 space-y-6 animate-in fade-in zoom-in duration-500">
+              <div className="flex justify-center">
+                <div className="relative">
+                  <div className="absolute inset-0 bg-primary/20 blur-2xl rounded-full" />
+                  <CheckCircle className="w-24 h-24 text-primary relative" />
+                </div>
+              </div>
+              <div className="space-y-2">
+                <h3 className="text-3xl font-black text-foreground">¡Listo!</h3>
+                <p className="text-muted-foreground">Tu pedido fue enviado al WhatsApp del local.</p>
+              </div>
               <button
-                onClick={onSuccess}
-                className="w-full bg-primary text-primary-foreground py-3 rounded-lg font-bold hover:bg-primary/90 transition-colors mt-2"
+                onClick={() => { onSuccess(); onClose(); }}
+                className="w-full bg-primary text-primary-foreground py-4 rounded-xl font-black hover:bg-primary/90 transition-all shadow-lg shadow-primary/20"
               >
-                Cerrar
+                Volver al menú
               </button>
             </div>
           )}
