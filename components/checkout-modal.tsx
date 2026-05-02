@@ -23,10 +23,10 @@ export function CheckoutModal({ onClose, onSuccess }: Props) {
   const [nombre, setNombre] = useState("");
   const [direccion, setDireccion] = useState("");
   const [telefono, setTelefono] = useState("");
-  const [pago, setPago] = useState<"efectivo" | "mercadopago" | "">("");
+  const [pago, setPago] = useState<"efectivo" | "mercadopago" | "transferencia" | "">("");
 
-  const deliveryFee = zona === "fuera" ? DELIVERY_FEE_OUTSIDE : 0;
-  const totalFinal = total + deliveryFee;
+  const ALIAS_CBU = "smash.burger.alberdi"; // REEMPLAZA CON TU ALIAS REAL
+  const TITULAR = "Smash Burger Alberdi";
 
   function buildWhatsAppMessage() {
     const lineas = items.map((i) => {
@@ -46,8 +46,10 @@ export function CheckoutModal({ onClose, onSuccess }: Props) {
         ? "🏪 *Retiro en local*"
         : `🛵 *Delivery* — ${direccion} (${zona === "alberdi" ? "zona Alberdi, envío gratis" : "fuera de zona, +$2000"})`;
 
-    const pagoTexto =
-      pago === "efectivo" ? "💵 Efectivo al recibir" : "📱 MercadoPago";
+    let pagoTexto = "";
+    if (pago === "efectivo") pagoTexto = "💵 Efectivo al recibir";
+    if (pago === "mercadopago") pagoTexto = "📱 MercadoPago (Pago online)";
+    if (pago === "transferencia") pagoTexto = "🏦 Transferencia Bancaria (Envío comprobante)";
 
     const msg = [
       `🍔 *NUEVO PEDIDO — SMASH BURGER*`,
@@ -64,6 +66,7 @@ export function CheckoutModal({ onClose, onSuccess }: Props) {
       `*Subtotal:* $${total.toLocaleString("es-AR")}`,
       deliveryFee > 0 ? `*Envío:* $${deliveryFee.toLocaleString("es-AR")}` : "",
       `*TOTAL: $${totalFinal.toLocaleString("es-AR")}*`,
+      pago === "transferencia" ? `\n⚠️ *Enviaré el comprobante a este chat.*` : ""
     ]
       .filter((l) => l !== undefined)
       .join("\n");
@@ -122,11 +125,17 @@ export function CheckoutModal({ onClose, onSuccess }: Props) {
           }),
         });
         const data = await res.json();
-        if (data.sandbox_init_point) {
+        
+        // CORRECCIÓN: Usar init_point para producción
+        if (data.init_point) {
+          await guardarPedido("mercadopago");
+          window.location.href = data.init_point;
+        } else if (data.sandbox_init_point) {
+          // Fallback a sandbox si no hay producción (para tests)
           await guardarPedido("mercadopago");
           window.location.href = data.sandbox_init_point;
         } else {
-          setErrorMP("No se pudo conectar con MercadoPago. Intentá con efectivo.");
+          setErrorMP("No se pudo conectar con MercadoPago. Intentá con efectivo o transferencia.");
         }
       } catch {
         setErrorMP("Error de conexión. Intentá de nuevo.");
@@ -134,7 +143,7 @@ export function CheckoutModal({ onClose, onSuccess }: Props) {
         setLoadingMP(false);
       }
     } else {
-      await guardarPedido("efectivo");
+      await guardarPedido(pago);
       const msg = buildWhatsAppMessage();
       const url = `https://api.whatsapp.com/send?phone=${WHATSAPP_NUMBER}&text=${msg}`;
       window.open(url, "_blank");
@@ -157,7 +166,7 @@ export function CheckoutModal({ onClose, onSuccess }: Props) {
           </button>
         </div>
 
-        <div className="px-6 py-5">
+        <div className="px-6 py-5 max-h-[80vh] overflow-y-auto no-scrollbar">
 
           {/* PASO 1: Modalidad */}
           {step === "modalidad" && (
@@ -284,28 +293,53 @@ export function CheckoutModal({ onClose, onSuccess }: Props) {
           {step === "pago" && (
             <div className="space-y-4">
               <p className="text-muted-foreground text-sm">¿Cómo querés pagar?</p>
-              <div className="grid grid-cols-2 gap-3">
-                <button
-                  onClick={() => setPago("efectivo")}
-                  className={`flex flex-col items-center gap-2 p-4 rounded-xl border-2 transition-all ${
-                    pago === "efectivo" ? "border-primary bg-primary/10" : "border-border hover:border-primary/50"
-                  }`}
-                >
-                  <Banknote className={`w-8 h-8 ${pago === "efectivo" ? "text-primary" : "text-muted-foreground"}`} />
-                  <span className="font-semibold text-sm text-foreground">Efectivo</span>
-                  <span className="text-xs text-muted-foreground">Al recibir</span>
-                </button>
+              <div className="grid grid-cols-1 gap-2">
+                <div className="grid grid-cols-2 gap-2">
+                  <button
+                    onClick={() => setPago("efectivo")}
+                    className={`flex flex-col items-center gap-1 p-3 rounded-xl border-2 transition-all ${
+                      pago === "efectivo" ? "border-primary bg-primary/10" : "border-border hover:border-primary/50"
+                    }`}
+                  >
+                    <Banknote className={`w-6 h-6 ${pago === "efectivo" ? "text-primary" : "text-muted-foreground"}`} />
+                    <span className="font-bold text-xs text-foreground">Efectivo</span>
+                    <span className="text-[10px] text-muted-foreground">Al recibir</span>
+                  </button>
+                  <button
+                    onClick={() => setPago("transferencia")}
+                    className={`flex flex-col items-center gap-1 p-3 rounded-xl border-2 transition-all ${
+                      pago === "transferencia" ? "border-primary bg-primary/10" : "border-border hover:border-primary/50"
+                    }`}
+                  >
+                    <RefreshCw className={`w-6 h-6 ${pago === "transferencia" ? "text-primary" : "text-muted-foreground"}`} />
+                    <span className="font-bold text-xs text-foreground">Transferencia</span>
+                    <span className="text-[10px] text-muted-foreground">Envío de CBU</span>
+                  </button>
+                </div>
                 <button
                   onClick={() => setPago("mercadopago")}
-                  className={`flex flex-col items-center gap-2 p-4 rounded-xl border-2 transition-all ${
+                  className={`flex items-center justify-center gap-3 p-3 rounded-xl border-2 transition-all ${
                     pago === "mercadopago" ? "border-primary bg-primary/10" : "border-border hover:border-primary/50"
                   }`}
                 >
-                  <CreditCard className={`w-8 h-8 ${pago === "mercadopago" ? "text-primary" : "text-muted-foreground"}`} />
-                  <span className="font-semibold text-sm text-foreground">MercadoPago</span>
-                  <span className="text-xs text-muted-foreground">Online</span>
+                  <CreditCard className={`w-5 h-5 ${pago === "mercadopago" ? "text-primary" : "text-muted-foreground"}`} />
+                  <div className="text-left">
+                    <span className="font-bold text-xs text-foreground block">MercadoPago (Tarjeta/Debito)</span>
+                    <span className="text-[10px] text-muted-foreground">Pago online 100% seguro</span>
+                  </div>
                 </button>
               </div>
+
+              {pago === "transferencia" && (
+                <div className="bg-primary/5 border border-primary/20 rounded-xl p-4 animate-in fade-in duration-300">
+                  <p className="text-[10px] font-black uppercase tracking-widest text-primary mb-2 text-center">Datos para Transferir</p>
+                  <div className="space-y-1 text-center">
+                    <p className="text-sm font-black text-foreground">{TITULAR}</p>
+                    <p className="text-lg font-black text-primary select-all">{ALIAS_CBU}</p>
+                    <p className="text-[10px] text-muted-foreground italic">Copiá el Alias y hacé el pago en tu App.</p>
+                  </div>
+                </div>
+              )}
 
               {/* Resumen */}
               <div className="bg-secondary rounded-lg p-4 space-y-2 text-sm">
@@ -332,7 +366,7 @@ export function CheckoutModal({ onClose, onSuccess }: Props) {
               </div>
 
               {errorMP && (
-                <p className="text-destructive text-xs text-center">{errorMP}</p>
+                <p className="text-destructive text-[10px] text-center font-bold">{errorMP}</p>
               )}
               <div className="flex gap-2">
                 <button
@@ -346,7 +380,7 @@ export function CheckoutModal({ onClose, onSuccess }: Props) {
                   onClick={handleConfirmar}
                   className="flex-1 bg-primary text-primary-foreground py-2.5 rounded-lg font-bold text-sm disabled:opacity-40 disabled:cursor-not-allowed hover:bg-primary/90 transition-colors"
                 >
-                  {loadingMP ? "Conectando..." : pago === "mercadopago" ? "Pagar con MercadoPago" : "Enviar por WhatsApp"}
+                  {loadingMP ? "Conectando..." : pago === "mercadopago" ? "Ir a Pagar" : "Finalizar Pedido"}
                 </button>
               </div>
             </div>
