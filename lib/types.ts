@@ -24,6 +24,7 @@ export type Order = {
   createdAt: Date
   phone?: string
   notes?: string
+  referencia?: string
 }
 
 export type OrdersContextType = {

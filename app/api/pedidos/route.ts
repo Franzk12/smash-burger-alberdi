@@ -28,7 +28,8 @@ export async function GET(req: NextRequest) {
       paymentMethod: p.payment_method,
       status: p.status,
       createdAt: new Date(p.created_at),
-      notes: p.notes
+      notes: p.notes,
+      referencia: p.referencia
     }));
 
     return NextResponse.json({ pedidos });

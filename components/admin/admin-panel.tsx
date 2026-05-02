@@ -135,6 +135,11 @@ function OrderCard({ order }: { order: Order }) {
                 <div className="text-xs">
                   <p className="font-bold text-foreground">Delivery</p>
                   <p className="text-muted-foreground">{order.address}</p>
+                  {order.referencia && (
+                    <p className="text-primary font-bold mt-1 bg-primary/5 px-2 py-0.5 rounded border border-primary/20 inline-block">
+                      📍 Ref: {order.referencia}
+                    </p>
+                  )}
                 </div>
               </>
             ) : (

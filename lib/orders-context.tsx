@@ -59,6 +59,12 @@ export function OrdersProvider({ children }: { children: ReactNode }) {
     fetchOrders()
     fetchConfig()
 
+    // Configurar Polling (Cada 30 segundos) como respaldo al RLS
+    const interval = setInterval(() => {
+      fetchOrders()
+      fetchConfig()
+    }, 30000)
+
     // Configurar Realtime con Supabase
     const channel = supabase
       .channel('pedidos_cambios')
@@ -73,6 +79,7 @@ export function OrdersProvider({ children }: { children: ReactNode }) {
 
     return () => {
       supabase.removeChannel(channel)
+      clearInterval(interval)
     }
   }, [fetchOrders, fetchConfig])
 
