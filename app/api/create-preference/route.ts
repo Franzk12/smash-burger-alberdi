@@ -5,7 +5,7 @@ const BASE_URL = process.env.NEXT_PUBLIC_BASE_URL || "https://smash-burger-alber
 
 export async function POST(req: NextRequest) {
   try {
-    const { items, nombre, modalidad, direccion, zona } = await req.json();
+    const { items, nombre, modalidad, direccion, zona, orderId } = await req.json();
 
     const mpItems = items.map((item: { name: string; price: number; quantity: number }) => ({
       title: item.name,
@@ -26,6 +26,7 @@ export async function POST(req: NextRequest) {
 
     const preference = {
       items: mpItems,
+      external_reference: orderId, // AQUÍ VINCULAMOS EL PEDIDO
       payer: {
         name: nombre,
       },
@@ -41,6 +42,7 @@ export async function POST(req: NextRequest) {
         modalidad,
         direccion: direccion || "Retiro en local",
         zona: zona || "local",
+        orderId,
       },
     };
 

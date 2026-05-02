@@ -107,6 +107,15 @@ export function CheckoutModal({ onClose, onSuccess }: Props) {
       setLoadingMP(true);
       setErrorMP("");
       try {
+        // 1. Guardamos el pedido primero para tener el ID real
+        const pedidoData = await guardarPedido("mercadopago_pendiente");
+        const pedidoId = (pedidoData as any)?.id;
+
+        if (!pedidoId) {
+          throw new Error("No se pudo generar el pedido");
+        }
+
+        // 2. Creamos la preferencia vinculada a ese ID
         const res = await fetch("/api/create-preference", {
           method: "POST",
           headers: { "Content-Type": "application/json" },
@@ -126,25 +135,20 @@ export function CheckoutModal({ onClose, onSuccess }: Props) {
             modalidad,
             direccion,
             zona,
+            orderId: pedidoId, // VINCULACIÓN CRITICA
           }),
         });
         const data = await res.json();
         
         if (data.init_point) {
-          // Guardamos como pendiente de pago y obtenemos el ID real
-          const pedidoData = await guardarPedido("mercadopago_pendiente");
-          const pedidoId = (pedidoData as any)?.id;
-          
-          // Enviamos a pagar con el ID vinculado
-          window.location.href = `${data.init_point}&external_reference=${pedidoId}`;
+          window.location.href = data.init_point;
         } else if (data.sandbox_init_point) {
-          const pedidoData = await guardarPedido("mercadopago_pendiente");
-          const pedidoId = (pedidoData as any)?.id;
-          window.location.href = `${data.sandbox_init_point}&external_reference=${pedidoId}`;
+          window.location.href = data.sandbox_init_point;
         } else {
           setErrorMP("No se pudo conectar con MercadoPago. Intentá con efectivo o transferencia.");
         }
-      } catch {
+      } catch (err) {
+        console.error(err);
         setErrorMP("Error de conexión. Intentá de nuevo.");
       } finally {
         setLoadingMP(false);
