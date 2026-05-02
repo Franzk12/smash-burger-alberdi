@@ -56,8 +56,11 @@ export async function POST(req: NextRequest) {
     const data = await response.json();
 
     if (!response.ok) {
-      console.error("Error MP:", data);
-      return NextResponse.json({ error: "Error al crear preferencia" }, { status: 500 });
+      console.error("Error detallado de Mercado Pago:", data);
+      return NextResponse.json({ 
+        error: "Error al crear preferencia", 
+        detail: data
+      }, { status: 500 });
     }
 
     return NextResponse.json({ 
