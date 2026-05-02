@@ -59,7 +59,9 @@ export async function POST(req: NextRequest) {
       console.error("Error detallado de Mercado Pago:", data);
       return NextResponse.json({ 
         error: "Error al crear preferencia", 
-        detail: data
+        message: data.message || "Error desconocido",
+        cause: data.cause || [],
+        full_detail: data
       }, { status: 500 });
     }
 
