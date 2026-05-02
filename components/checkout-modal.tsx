@@ -82,7 +82,7 @@ export function CheckoutModal({ onClose, onSuccess }: Props) {
 
   async function guardarPedido(pagoTipo: string) {
     try {
-      await fetch("/api/pedidos", {
+      const res = await fetch("/api/pedidos", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({
@@ -96,6 +96,7 @@ export function CheckoutModal({ onClose, onSuccess }: Props) {
           pago: pagoTipo,
         }),
       });
+      return await res.json();
     } catch {
       // Si falla el guardado, el pedido igual se procesa
     }
@@ -130,12 +131,16 @@ export function CheckoutModal({ onClose, onSuccess }: Props) {
         const data = await res.json();
         
         if (data.init_point) {
-          // Guardamos como pendiente de pago para que el admin sepa que aún no entró la plata
-          await guardarPedido("mercadopago_pendiente");
-          window.location.href = data.init_point;
+          // Guardamos como pendiente de pago y obtenemos el ID real
+          const pedidoData = await guardarPedido("mercadopago_pendiente");
+          const pedidoId = (pedidoData as any)?.id;
+          
+          // Enviamos a pagar con el ID vinculado
+          window.location.href = `${data.init_point}&external_reference=${pedidoId}`;
         } else if (data.sandbox_init_point) {
-          await guardarPedido("mercadopago_pendiente");
-          window.location.href = data.sandbox_init_point;
+          const pedidoData = await guardarPedido("mercadopago_pendiente");
+          const pedidoId = (pedidoData as any)?.id;
+          window.location.href = `${data.sandbox_init_point}&external_reference=${pedidoId}`;
         } else {
           setErrorMP("No se pudo conectar con MercadoPago. Intentá con efectivo o transferencia.");
         }
