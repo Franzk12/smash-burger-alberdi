@@ -2,6 +2,8 @@ export type OrderItem = {
   name: string
   quantity: number
   price: number
+  customizations?: { name: string; price: number }[]
+  notes?: string
 }
 
 export type OrderType = 'retiro' | 'delivery'
@@ -34,4 +36,6 @@ export type OrdersContextType = {
   totalSales: number
   loading: boolean
   refresh: () => void
+  isOpen: boolean
+  toggleStoreStatus: () => Promise<void>
 }

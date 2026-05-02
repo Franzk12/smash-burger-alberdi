@@ -5,12 +5,33 @@ import { useAuth } from "./auth-context"
 import { supabase } from "./supabase"
 import type { Order, OrderStatus, OrdersContextType } from "./types"
 
+type StoreConfig = {
+  isOpen: boolean
+}
+
 const OrdersContext = createContext<OrdersContextType | undefined>(undefined)
 
 export function OrdersProvider({ children }: { children: ReactNode }) {
   const { password } = useAuth()
   const [orders, setOrders] = useState<Order[]>([])
   const [loading, setLoading] = useState(true)
+  const [isOpen, setIsOpen] = useState(true)
+
+  const fetchConfig = useCallback(async () => {
+    try {
+      const { data, error } = await supabase
+        .from('store_config')
+        .select('*')
+        .eq('key', 'store_status')
+        .single()
+      
+      if (data) {
+        setIsOpen(data.value === 'open')
+      }
+    } catch (e) {
+      console.error("Error fetching config:", e)
+    }
+  }, [])
 
   const fetchOrders = useCallback(async () => {
     try {
@@ -36,6 +57,7 @@ export function OrdersProvider({ children }: { children: ReactNode }) {
 
   useEffect(() => {
     fetchOrders()
+    fetchConfig()
 
     // Configurar Realtime con Supabase
     const channel = supabase
@@ -52,7 +74,7 @@ export function OrdersProvider({ children }: { children: ReactNode }) {
     return () => {
       supabase.removeChannel(channel)
     }
-  }, [fetchOrders])
+  }, [fetchOrders, fetchConfig])
 
   const updateOrderStatus = async (orderId: string, status: OrderStatus) => {
     // Actualizar localmente primero (optimistic update)
@@ -70,6 +92,22 @@ export function OrdersProvider({ children }: { children: ReactNode }) {
       },
       body: JSON.stringify({ id: orderId, estado: status }),
     })
+  }
+
+  const toggleStoreStatus = async () => {
+    const newStatus = !isOpen ? 'open' : 'closed'
+    setIsOpen(!isOpen) // Optimistic
+
+    try {
+      const { error } = await supabase
+        .from('store_config')
+        .upsert({ key: 'store_status', value: newStatus })
+      
+      if (error) throw error
+    } catch (e) {
+      console.error("Error updating store status:", e)
+      setIsOpen(isOpen) // Revert
+    }
   }
 
   const addOrder = (order: Order) => {
@@ -95,6 +133,8 @@ export function OrdersProvider({ children }: { children: ReactNode }) {
         totalSales,
         loading,
         refresh: fetchOrders,
+        isOpen,
+        toggleStoreStatus
       }}
     >
       {children}

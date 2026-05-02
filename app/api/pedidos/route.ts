@@ -64,13 +64,23 @@ export async function POST(req: NextRequest) {
     }
 
     // 2. Guardar los items
-    const itemsToInsert = body.items.map((item: any) => ({
-      pedido_id: pedidoId,
-      name: item.name,
-      price: item.price,
-      quantity: item.quantity,
-      category: item.category || "burger"
-    }));
+    const itemsToInsert = body.items.map((item: any) => {
+      let finalName = item.name;
+      if (item.customizations && item.customizations.length > 0) {
+        finalName += ` (+ ${item.customizations.map((c: any) => c.name).join(", ")})`;
+      }
+      if (item.notes) {
+        finalName += ` [Nota: ${item.notes}]`;
+      }
+
+      return {
+        pedido_id: pedidoId,
+        name: finalName,
+        price: item.price,
+        quantity: item.quantity,
+        category: item.category || "burger"
+      };
+    });
 
     const { error: itemsError } = await supabase
       .from('items_pedido')

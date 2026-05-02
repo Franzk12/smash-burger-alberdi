@@ -7,8 +7,17 @@ import qrcode from "qrcode-terminal";
 import pino from "pino";
 import { createClient } from "@supabase/supabase-js";
 import dotenv from "dotenv";
+import fs from "fs";
 
 dotenv.config();
+
+function setStatus(status, qr = null) {
+  try {
+    fs.writeFileSync("status.json", JSON.stringify({ status, qr, pid: process.pid, time: Date.now() }));
+  } catch(e) {}
+}
+
+setStatus("INICIANDO");
 
 const supabase = createClient(
   process.env.SUPABASE_URL,
@@ -28,6 +37,23 @@ let menuCache = {
   extras: [],
 };
 let lastMenuFetch = 0;
+let isStoreOpen = true;
+
+async function updateStoreStatus() {
+  try {
+    const { data, error } = await supabase
+      .from("store_config")
+      .select("*")
+      .eq("key", "store_status")
+      .single();
+    
+    if (data) {
+      isStoreOpen = data.value === "open";
+    }
+  } catch (err) {
+    console.error("❌ Error al cargar estado del local:", err.message);
+  }
+}
 
 async function updateMenuCache() {
   // Solo actualiza si pasaron más de 5 minutos
@@ -74,6 +100,10 @@ function findProduct(text) {
 // ─── LÓGICA DE RESPUESTAS ─────────────────────────────────────────────────────
 function getResponse(text) {
   const t = normalize(text);
+
+  if (!isStoreOpen) {
+    return "👋 ¡Hola! *Smash Burger Alberdi* se encuentra cerrado por el momento.\n\nEstamos descansando o colapsados de pedidos para darte la mejor calidad. 🍔🔥\n\nVolvé a consultarnos más tarde o mirá nuestro horario en la web: " + WEB_URL;
+  }
 
   // Saludo
   if (/^(hola|buen[ao]s?|buenas|hey|ahi|ahi estan|que tal|como andan)/.test(t)) {
@@ -147,13 +177,16 @@ async function connectToWhatsApp() {
       console.log("═══════════════════════════════════════");
       console.log("Abrí WhatsApp → Dispositivos vinculados → Vincular dispositivo\n");
       qrcode.generate(qr, { small: true });
+      setStatus("QR_READY", qr);
     }
 
     if (connection === "open") {
       console.log("\n✅ Bot conectado y listo para responder!\n");
+      setStatus("CONECTADO");
     }
 
     if (connection === "close") {
+      setStatus("DESCONECTADO");
       const shouldReconnect =
         lastDisconnect?.error?.output?.statusCode !== DisconnectReason.loggedOut;
       console.log("Conexión cerrada. Reconectando...", shouldReconnect);
@@ -213,6 +246,7 @@ async function connectToWhatsApp() {
       }
 
       // Antes de responder, nos aseguramos que el menú esté al día
+      await updateStoreStatus();
       await updateMenuCache();
 
       const respuesta = getResponse(text);

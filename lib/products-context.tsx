@@ -16,6 +16,8 @@ type ProductsContextType = {
   products: Product[]
   loading: boolean
   updateProduct: (id: string, updates: Partial<Product>) => Promise<void>
+  addProduct: (product: Omit<Product, "id">) => Promise<void>
+  deleteProduct: (id: string) => Promise<void>
   refresh: () => void
 }
 
@@ -52,7 +54,7 @@ export function ProductsProvider({ children, isAdmin = false }: { children: Reac
     )
 
     try {
-      const password = typeof window !== 'undefined' ? localStorage.getItem("panel_password") : ""
+      const password = typeof window !== 'undefined' ? sessionStorage.getItem("smash_pass") : ""
       const res = await fetch("/api/productos", {
         method: "PATCH",
         headers: {
@@ -72,12 +74,55 @@ export function ProductsProvider({ children, isAdmin = false }: { children: Reac
     }
   }
 
+  const addProduct = async (product: Omit<Product, "id">) => {
+    try {
+      const password = typeof window !== 'undefined' ? sessionStorage.getItem("smash_pass") : ""
+      const res = await fetch("/api/productos", {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+          "x-panel-password": password || "",
+        },
+        body: JSON.stringify(product),
+      })
+      if (res.ok) {
+        fetchProducts()
+      }
+    } catch (error) {
+      console.error("Error adding product:", error)
+    }
+  }
+
+  const deleteProduct = async (id: string) => {
+    // Optimistic delete
+    setProducts((prev) => prev.filter((p) => p.id !== id))
+    try {
+      const password = typeof window !== 'undefined' ? sessionStorage.getItem("smash_pass") : ""
+      const res = await fetch("/api/productos", {
+        method: "DELETE",
+        headers: {
+          "Content-Type": "application/json",
+          "x-panel-password": password || "",
+        },
+        body: JSON.stringify({ id }),
+      })
+      if (!res.ok) {
+        fetchProducts()
+      }
+    } catch (error) {
+      console.error("Error deleting product:", error)
+      fetchProducts()
+    }
+  }
+
   return (
     <ProductsContext.Provider
       value={{
         products,
         loading,
         updateProduct,
+        addProduct,
+        deleteProduct,
         refresh: fetchProducts,
       }}
     >

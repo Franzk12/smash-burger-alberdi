@@ -39,6 +39,7 @@ export async function POST(req: NextRequest) {
         description: body.description,
         category: body.category,
         available: body.available ?? true,
+        image_url: body.image_url,
       },
     ])
     .select()

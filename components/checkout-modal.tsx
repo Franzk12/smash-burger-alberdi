@@ -29,9 +29,17 @@ export function CheckoutModal({ onClose, onSuccess }: Props) {
   const totalFinal = total + deliveryFee;
 
   function buildWhatsAppMessage() {
-    const lineas = items.map(
-      (i) => `• ${i.quantity}x ${i.name} — $${(i.price * i.quantity).toLocaleString("es-AR")}`
-    );
+    const lineas = items.map((i) => {
+      let itemText = `• ${i.quantity}x ${i.name}`;
+      if (i.customizations && i.customizations.length > 0) {
+        itemText += `\n  - Agregados: ${i.customizations.map(c => c.name).join(", ")}`;
+      }
+      if (i.notes) {
+        itemText += `\n  - Notas: ${i.notes}`;
+      }
+      itemText += ` — $${(i.price * i.quantity).toLocaleString("es-AR")}`;
+      return itemText;
+    });
 
     const modalidadTexto =
       modalidad === "retiro"
@@ -96,7 +104,16 @@ export function CheckoutModal({ onClose, onSuccess }: Props) {
           method: "POST",
           headers: { "Content-Type": "application/json" },
           body: JSON.stringify({
-            items: items.map((i) => ({ name: i.name, price: i.price, quantity: i.quantity })),
+            items: items.map((i) => {
+              let name = i.name;
+              if (i.customizations && i.customizations.length > 0) {
+                name += ` (+ ${i.customizations.map(c => c.name).join(", ")})`;
+              }
+              if (i.notes) {
+                name += ` [Nota: ${i.notes}]`;
+              }
+              return { name, price: i.price, quantity: i.quantity };
+            }),
             nombre,
             telefono,
             modalidad,
@@ -119,7 +136,8 @@ export function CheckoutModal({ onClose, onSuccess }: Props) {
     } else {
       await guardarPedido("efectivo");
       const msg = buildWhatsAppMessage();
-      window.open(`https://wa.me/${WHATSAPP_NUMBER}?text=${msg}`, "_blank");
+      const url = `https://api.whatsapp.com/send?phone=${WHATSAPP_NUMBER}&text=${msg}`;
+      window.open(url, "_blank");
       setStep("confirmado");
     }
   }
