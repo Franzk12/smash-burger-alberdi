@@ -17,7 +17,7 @@ export async function GET(req: NextRequest) {
     if (error) throw error;
 
     // Adaptar campos de DB a formato esperado por el frontend
-    const pedidos = data.map(p => ({
+    const pedidos = data.map((p: any) => ({
       id: p.id,
       customerName: p.customer_name,
       phone: p.phone,
