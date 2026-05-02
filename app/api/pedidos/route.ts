@@ -57,7 +57,7 @@ export async function POST(req: NextRequest) {
     if (dbProducts) {
       let totalCalculado = 0;
       for (const item of body.items) {
-        const prodReal = dbProducts.find(p => p.name === item.name);
+        const prodReal = dbProducts.find((p: any) => p.name === item.name);
         if (prodReal) {
           // Sumamos el precio real del producto * cantidad
           totalCalculado += prodReal.price * item.quantity;
