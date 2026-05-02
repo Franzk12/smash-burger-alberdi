@@ -129,13 +129,12 @@ export function CheckoutModal({ onClose, onSuccess }: Props) {
         });
         const data = await res.json();
         
-        // CORRECCIÓN: Usar init_point para producción
         if (data.init_point) {
-          await guardarPedido("mercadopago");
+          // Guardamos como pendiente de pago para que el admin sepa que aún no entró la plata
+          await guardarPedido("mercadopago_pendiente");
           window.location.href = data.init_point;
         } else if (data.sandbox_init_point) {
-          // Fallback a sandbox si no hay producción (para tests)
-          await guardarPedido("mercadopago");
+          await guardarPedido("mercadopago_pendiente");
           window.location.href = data.sandbox_init_point;
         } else {
           setErrorMP("No se pudo conectar con MercadoPago. Intentá con efectivo o transferencia.");

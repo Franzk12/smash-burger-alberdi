@@ -187,9 +187,30 @@ function OrderCard({ order }: { order: Order }) {
         {/* Footer info: Pago y Acción */}
         <div className="pt-4 border-t border-white/5 flex flex-col gap-3">
           <div className="flex items-center justify-between">
-            <div className="flex items-center gap-2 opacity-50">
-              {order.paymentMethod === "efectivo" ? <Banknote className="w-4 h-4" /> : <CreditCard className="w-4 h-4" />}
-              <span className="text-[10px] font-bold uppercase tracking-wider">{order.paymentMethod}</span>
+            <div className="flex items-center gap-2 opacity-80">
+              {order.paymentMethod === "efectivo" ? (
+                <div className="flex items-center gap-1.5 bg-green-500/10 text-green-500 px-2 py-0.5 rounded-md">
+                  <Banknote className="w-3.5 h-3.5" />
+                  <span className="text-[9px] font-black uppercase tracking-wider">Efectivo</span>
+                </div>
+              ) : order.paymentMethod === "transferencia" ? (
+                <div className="flex items-center gap-1.5 bg-blue-500/10 text-blue-500 px-2 py-0.5 rounded-md">
+                  <RefreshCw className="w-3.5 h-3.5" />
+                  <span className="text-[9px] font-black uppercase tracking-wider">Transferencia</span>
+                </div>
+              ) : (
+                <div className={cn(
+                  "flex items-center gap-1.5 px-2 py-0.5 rounded-md",
+                  order.paymentMethod === "mercadopago_pendiente" 
+                    ? "bg-yellow-500/20 text-yellow-500 animate-pulse border border-yellow-500/30" 
+                    : "bg-primary/10 text-primary"
+                )}>
+                  <CreditCard className="w-3.5 h-3.5" />
+                  <span className="text-[9px] font-black uppercase tracking-wider">
+                    {order.paymentMethod === "mercadopago_pendiente" ? "⚠️ PAGO PENDIENTE MP" : "MercadoPago"}
+                  </span>
+                </div>
+              )}
             </div>
             {order.phone && (
               <button
