@@ -25,6 +25,9 @@ export function CheckoutModal({ onClose, onSuccess }: Props) {
   const [telefono, setTelefono] = useState("");
   const [pago, setPago] = useState<"efectivo" | "mercadopago" | "transferencia" | "">("");
 
+  const deliveryFee = zona === "fuera" ? DELIVERY_FEE_OUTSIDE : 0;
+  const totalFinal = total + deliveryFee;
+
   const ALIAS_CBU = "smash.burger.alberdi"; // REEMPLAZA CON TU ALIAS REAL
   const TITULAR = "Smash Burger Alberdi";
 
