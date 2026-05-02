@@ -1,7 +1,7 @@
 "use client";
 
 import { useState } from "react";
-import { X, MapPin, Store, Banknote, CreditCard, CheckCircle } from "lucide-react";
+import { X, MapPin, Store, Banknote, CreditCard, CheckCircle, RefreshCw } from "lucide-react";
 import { useCart } from "@/context/cart-context";
 
 const WHATSAPP_NUMBER = "5493865228354";
