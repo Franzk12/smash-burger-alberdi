@@ -1,0 +1,22 @@
+{
+  "name": "smash-burger-bot",
+  "version": "1.0.0",
+  "description": "Bot de WhatsApp para Smash Burger Alberdi",
+  "main": "bot.js",
+  "type": "module",
+  "scripts": {
+    "start": "node bot.js",
+    "pm2:start": "pm2 start ecosystem.config.cjs",
+    "pm2:stop": "pm2 stop smash-bot",
+    "pm2:restart": "pm2 restart smash-bot",
+    "pm2:logs": "pm2 logs smash-bot",
+    "pm2:status": "pm2 status"
+  },
+  "dependencies": {
+    "@supabase/supabase-js": "^2.105.1",
+    "@whiskeysockets/baileys": "^6.7.9",
+    "dotenv": "^17.4.2",
+    "pino": "^9.5.0",
+    "qrcode-terminal": "^0.12.0"
+  }
+}
