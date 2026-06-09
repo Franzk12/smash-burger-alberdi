@@ -2,9 +2,8 @@
 
 import { Plus } from "lucide-react";
 import Image from "next/image";
-import { BurgerIcon, FriesIcon, CheeseIcon } from "@/components/food-icons";
+import { BurgerIcon, FriesIcon } from "@/components/food-icons";
 import { useState, useEffect } from "react";
-import { useCart } from "@/context/cart-context";
 import { useProducts, ProductsProvider, type Product } from "@/lib/products-context";
 import { useStoreStatus } from "@/lib/store-status-context";
 import { AlertCircle } from "lucide-react";
@@ -27,7 +26,6 @@ const CATEGORIES = [
   { id: "burgers", label: "Burgers", icon: BurgerIcon },
   { id: "milanesas", label: "Milas", icon: BurgerIcon },
   { id: "papas", label: "Papas", icon: FriesIcon },
-  { id: "extras", label: "Extras", icon: CheeseIcon },
 ];
 
 function CategoryNav({ visible }: { visible: boolean }) {
@@ -83,7 +81,6 @@ function CategoryNav({ visible }: { visible: boolean }) {
 }
 
 function MenuContent() {
-  const { addItem } = useCart();
   const { products, loading } = useProducts();
   const isOpen = useStoreStatus();
   const [selectedProduct, setSelectedProduct] = useState<Product | null>(null);
@@ -223,34 +220,6 @@ function MenuContent() {
                   </div>
                 )}
 
-                {extras.length > 0 && (
-                  <div id="extras">
-                    <div className="flex items-center gap-4 mb-10 border-l-4 border-primary pl-4">
-                      <CheeseIcon className="w-10 h-10 text-primary" />
-                      <h3 className="text-3xl md:text-4xl font-black text-foreground uppercase italic tracking-tight">Extras</h3>
-                    </div>
-                    <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-4 gap-4">
-                      {extras.map((extra) => (
-                        <div key={extra.id} className="bg-card/50 backdrop-blur-sm border border-border/50 rounded-2xl p-5 hover:border-primary transition-colors duration-200 group flex flex-col overflow-hidden relative shadow-sm">
-                          {extra.image_url && (
-                            <div className="-mx-5 -mt-5 mb-4 h-28 overflow-hidden bg-muted border-b border-border/50 relative">
-                              <Image src={extra.image_url} alt={extra.name} fill className="object-cover transition-transform duration-300 group-hover:scale-105" sizes="(max-width: 640px) 50vw, 25vw" />
-                            </div>
-                          )}
-                          <p className="font-black text-foreground text-sm group-hover:text-primary transition-colors uppercase">{extra.name}</p>
-                          <p className="text-primary font-black mt-1 text-lg">${extra.price.toLocaleString("es-AR")}</p>
-                          {isOpen ? (
-                            <div className="mt-4">
-                              <AddButton onClick={() => addItem({ id: extra.id, name: extra.name, price: extra.price, category: "extra" })} />
-                            </div>
-                          ) : (
-                            <div className="mt-4 w-full py-2 text-center text-xs font-black text-muted-foreground bg-white/5 rounded-xl border border-white/5 uppercase tracking-widest">Cerrado</div>
-                          )}
-                        </div>
-                      ))}
-                    </div>
-                  </div>
-                )}
               </>
             )}
           </div>
