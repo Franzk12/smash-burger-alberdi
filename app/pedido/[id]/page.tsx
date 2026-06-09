@@ -104,13 +104,13 @@ export default function TrackingPage() {
                 <div key={step.key} className="flex gap-4">
                   <div className="flex flex-col items-center">
                     <div className={cn(
-                      "w-10 h-10 rounded-full flex items-center justify-center border-2 transition-all duration-500",
+                      "w-10 h-10 rounded-full flex items-center justify-center border-2 transition-all duration-200",
                       done ? "bg-primary border-primary text-primary-foreground" : "bg-background border-border text-muted-foreground"
                     )}>
                       <Icon className={cn("w-5 h-5", active && "animate-pulse")} />
                     </div>
                     {i < STEPS.length - 1 && (
-                      <div className={cn("w-0.5 h-10 transition-all duration-500", done && i < stepIndex ? "bg-primary" : "bg-border")} />
+                      <div className={cn("w-0.5 h-10 transition-all duration-200", done && i < stepIndex ? "bg-primary" : "bg-border")} />
                     )}
                   </div>
                   <div className="pt-2 pb-8">

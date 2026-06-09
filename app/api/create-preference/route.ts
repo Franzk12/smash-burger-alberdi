@@ -26,7 +26,7 @@ export async function POST(req: NextRequest) {
 
     const preference = {
       items: mpItems,
-      external_reference: orderId, // AQUÍ VINCULAMOS EL PEDIDO
+      external_reference: orderId,
       payer: {
         name: nombre,
       },
@@ -35,6 +35,7 @@ export async function POST(req: NextRequest) {
         failure: `${BASE_URL}/pedido/error`,
         pending: `${BASE_URL}/pedido/pendiente`,
       },
+      notification_url: `${BASE_URL}/api/webhooks/mercadopago`,
       auto_return: "approved",
       statement_descriptor: "SMASH BURGER ALBERDI",
       metadata: {

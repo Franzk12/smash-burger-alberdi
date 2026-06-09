@@ -31,6 +31,30 @@ export async function POST(req: NextRequest) {
       return NextResponse.json({ error: "El pago no corresponde a este pedido" }, { status: 400 });
     }
 
+    // Traer el pedido para verificar que el monto cobrado coincida con lo esperado
+    const { data: pedido, error: fetchError } = await supabaseAdmin
+      .from("pedidos")
+      .select("total")
+      .eq("id", orderId)
+      .single();
+
+    if (fetchError || !pedido) {
+      return NextResponse.json({ error: "Pedido no encontrado" }, { status: 404 });
+    }
+
+    // Verificar moneda y monto (defensa en profundidad). Tolerancia de $1 por redondeos.
+    const totalEsperado = Number(pedido.total);
+    const montoPagado = Number(payment.transaction_amount);
+    if (payment.currency_id !== "ARS" || Math.abs(montoPagado - totalEsperado) > 1) {
+      console.error(`🚨 confirmar-pago: monto/moneda no coincide en pedido ${orderId}`, {
+        esperado: totalEsperado,
+        pagado: montoPagado,
+        moneda: payment.currency_id,
+        paymentId,
+      });
+      return NextResponse.json({ error: "El monto del pago no coincide con el pedido" }, { status: 400 });
+    }
+
     const { error } = await supabaseAdmin
       .from("pedidos")
       .update({ payment_method: "mercadopago" })

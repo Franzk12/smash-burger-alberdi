@@ -139,11 +139,11 @@ function MenuContent() {
                     </div>
                     <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
                       {burgers.map((burger) => (
-                        <div key={burger.id} className="bg-card/50 backdrop-blur-sm border border-border/50 rounded-2xl p-6 hover:border-primary transition-all duration-500 group hover:shadow-[0_20px_50px_rgba(0,0,0,0.2)] flex flex-col overflow-hidden relative">
+                        <div key={burger.id} className="bg-card/50 backdrop-blur-sm border border-border/50 rounded-2xl p-6 hover:border-primary transition-colors duration-200 group hover:shadow-[0_20px_50px_rgba(0,0,0,0.2)] flex flex-col overflow-hidden relative">
                           {burger.image_url && (
                             <div className="-mx-6 -mt-6 mb-6 h-56 overflow-hidden bg-muted border-b border-border/50 relative">
-                              <Image src={burger.image_url} alt={burger.name} fill className="object-cover transition-transform duration-700 group-hover:scale-110" sizes="(max-width: 768px) 100vw, (max-width: 1200px) 50vw, 33vw" />
-                              <div className="absolute inset-0 bg-gradient-to-t from-black/60 to-transparent opacity-0 group-hover:opacity-100 transition-opacity duration-500" />
+                              <Image src={burger.image_url} alt={burger.name} fill className="object-cover transition-transform duration-300 group-hover:scale-105" sizes="(max-width: 768px) 100vw, (max-width: 1200px) 50vw, 33vw" />
+                              <div className="absolute inset-0 bg-gradient-to-t from-black/60 to-transparent opacity-0 group-hover:opacity-100 transition-opacity duration-200" />
                             </div>
                           )}
                           <div className="flex justify-between items-start gap-4">
@@ -170,10 +170,10 @@ function MenuContent() {
                     </div>
                     <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-6">
                       {milanesas.map((item) => (
-                        <div key={item.id} className="bg-card/50 backdrop-blur-sm border border-border/50 rounded-2xl p-5 hover:border-primary transition-all duration-500 group hover:shadow-[0_20px_50px_rgba(0,0,0,0.15)] flex flex-col overflow-hidden">
+                        <div key={item.id} className="bg-card/50 backdrop-blur-sm border border-border/50 rounded-2xl p-5 hover:border-primary transition-colors duration-200 group hover:shadow-[0_20px_50px_rgba(0,0,0,0.15)] flex flex-col overflow-hidden">
                           {item.image_url && (
                             <div className="-mx-5 -mt-5 mb-5 h-44 overflow-hidden bg-muted border-b border-border/50 relative">
-                              <Image src={item.image_url} alt={item.name} fill className="object-cover transition-transform duration-700 group-hover:scale-110" sizes="(max-width: 640px) 100vw, (max-width: 1024px) 50vw, 25vw" />
+                              <Image src={item.image_url} alt={item.name} fill className="object-cover transition-transform duration-300 group-hover:scale-105" sizes="(max-width: 640px) 100vw, (max-width: 1024px) 50vw, 25vw" />
                             </div>
                           )}
                           <div className="flex justify-between items-start gap-3">
@@ -200,10 +200,10 @@ function MenuContent() {
                     </div>
                     <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-6">
                       {papas.map((papa) => (
-                        <div key={papa.id} className="bg-card/50 backdrop-blur-sm border border-border/50 rounded-2xl p-5 hover:border-primary transition-all duration-500 group hover:shadow-[0_20px_50px_rgba(0,0,0,0.15)] flex flex-col overflow-hidden">
+                        <div key={papa.id} className="bg-card/50 backdrop-blur-sm border border-border/50 rounded-2xl p-5 hover:border-primary transition-colors duration-200 group hover:shadow-[0_20px_50px_rgba(0,0,0,0.15)] flex flex-col overflow-hidden">
                           {papa.image_url && (
                             <div className="-mx-5 -mt-5 mb-5 h-44 overflow-hidden bg-muted border-b border-border/50 relative">
-                              <Image src={papa.image_url} alt={papa.name} fill className="object-cover transition-transform duration-700 group-hover:scale-110" sizes="(max-width: 640px) 100vw, (max-width: 1024px) 50vw, 25vw" />
+                              <Image src={papa.image_url} alt={papa.name} fill className="object-cover transition-transform duration-300 group-hover:scale-105" sizes="(max-width: 640px) 100vw, (max-width: 1024px) 50vw, 25vw" />
                             </div>
                           )}
                           <div className="flex justify-between items-start gap-3">
@@ -231,10 +231,10 @@ function MenuContent() {
                     </div>
                     <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-4 gap-4">
                       {extras.map((extra) => (
-                        <div key={extra.id} className="bg-card/50 backdrop-blur-sm border border-border/50 rounded-2xl p-5 hover:border-primary transition-all duration-500 group flex flex-col overflow-hidden relative shadow-sm">
+                        <div key={extra.id} className="bg-card/50 backdrop-blur-sm border border-border/50 rounded-2xl p-5 hover:border-primary transition-colors duration-200 group flex flex-col overflow-hidden relative shadow-sm">
                           {extra.image_url && (
                             <div className="-mx-5 -mt-5 mb-4 h-28 overflow-hidden bg-muted border-b border-border/50 relative">
-                              <Image src={extra.image_url} alt={extra.name} fill className="object-cover transition-transform duration-700 group-hover:scale-110" sizes="(max-width: 640px) 50vw, 25vw" />
+                              <Image src={extra.image_url} alt={extra.name} fill className="object-cover transition-transform duration-300 group-hover:scale-105" sizes="(max-width: 640px) 50vw, 25vw" />
                             </div>
                           )}
                           <p className="font-black text-foreground text-sm group-hover:text-primary transition-colors uppercase">{extra.name}</p>

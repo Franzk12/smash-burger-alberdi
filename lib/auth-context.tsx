@@ -29,8 +29,8 @@ export function AuthProvider({ children }: { children: ReactNode }) {
       headers: { "x-panel-password": pass },
     })
     if (res.ok) {
-      setIsAuthenticated(true)
       setPassword(pass)
+      setIsAuthenticated(true)
       sessionStorage.setItem("smash_pass", pass)
       return true
     }

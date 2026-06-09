@@ -1,6 +1,6 @@
 "use client"
 
-import { useState, useEffect } from "react"
+import { useState, useEffect, useRef, useId } from "react"
 import { useOrders } from "@/lib/orders-context"
 import { useAuth } from "@/lib/auth-context"
 import { useProducts } from "@/lib/products-context"
@@ -137,8 +137,8 @@ function OrderCard({ order }: { order: Order }) {
                   <p className="font-bold text-foreground">Delivery</p>
                   <p className="text-muted-foreground">{order.address}</p>
                   {order.referencia && (
-                    <p className="text-primary font-bold mt-1 bg-primary/5 px-2 py-0.5 rounded border border-primary/20 inline-block">
-                      📍 Ref: {order.referencia}
+                    <p className="text-primary font-bold mt-1 bg-primary/5 px-2 py-0.5 rounded border border-primary/20 inline-flex items-center gap-1">
+                      <MapPin className="w-3 h-3 shrink-0" aria-hidden="true" /> Ref: {order.referencia}
                     </p>
                   )}
                 </div>
@@ -212,9 +212,11 @@ function OrderCard({ order }: { order: Order }) {
                     ? "bg-yellow-500/20 text-yellow-500 animate-pulse border border-yellow-500/30" 
                     : "bg-primary/10 text-primary"
                 )}>
-                  <CreditCard className="w-3.5 h-3.5" />
+                  {order.paymentMethod === "mercadopago_pendiente"
+                    ? <AlertCircle className="w-3.5 h-3.5" aria-hidden="true" />
+                    : <CreditCard className="w-3.5 h-3.5" aria-hidden="true" />}
                   <span className="text-[9px] font-black uppercase tracking-wider">
-                    {order.paymentMethod === "mercadopago_pendiente" ? "⚠️ PAGO PENDIENTE MP" : "MercadoPago"}
+                    {order.paymentMethod === "mercadopago_pendiente" ? "PAGO PENDIENTE MP" : "MercadoPago"}
                   </span>
                 </div>
               )}
@@ -222,16 +224,16 @@ function OrderCard({ order }: { order: Order }) {
             {order.phone && (
               <button
                 onClick={notificarCliente}
-                className="text-[10px] font-bold text-primary hover:underline flex items-center gap-1"
+                className="text-[10px] font-bold text-primary hover:underline flex items-center gap-1 cursor-pointer focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary rounded"
               >
-                <Store className="w-3 h-3" /> WhatsApp
+                <Store className="w-3 h-3" aria-hidden="true" /> WhatsApp
               </button>
             )}
             <button
               onClick={() => printOrderTicket(order)}
-              className="text-[10px] font-bold text-muted-foreground hover:text-foreground hover:underline flex items-center gap-1"
+              className="text-[10px] font-bold text-muted-foreground hover:text-foreground hover:underline flex items-center gap-1 cursor-pointer focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary rounded"
             >
-              <Printer className="w-3 h-3" /> Imprimir
+              <Printer className="w-3 h-3" aria-hidden="true" /> Imprimir
             </button>
           </div>
 
@@ -239,18 +241,18 @@ function OrderCard({ order }: { order: Order }) {
             {order.status === "pendiente" && (
               <button
                 onClick={() => updateOrderStatus(order.id, "preparando")}
-                className="flex-1 bg-primary text-primary-foreground py-2 rounded-lg text-xs font-black hover:bg-primary/90 transition-all flex items-center justify-center gap-2"
+                className="flex-1 bg-primary text-primary-foreground py-2 rounded-lg text-xs font-black hover:bg-primary/90 transition-all flex items-center justify-center gap-2 cursor-pointer focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary focus-visible:ring-offset-2 focus-visible:ring-offset-[#111111]"
               >
-                <ChefHat className="w-3.5 h-3.5" />
+                <ChefHat className="w-3.5 h-3.5" aria-hidden="true" />
                 Preparar
               </button>
             )}
             {order.status === "preparando" && (
               <button
                 onClick={() => updateOrderStatus(order.id, "completado")}
-                className="flex-1 bg-green-500 text-white py-2 rounded-lg text-xs font-black hover:bg-green-600 transition-all flex items-center justify-center gap-2"
+                className="flex-1 bg-green-500 text-white py-2 rounded-lg text-xs font-black hover:bg-green-600 transition-all flex items-center justify-center gap-2 cursor-pointer focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-green-400 focus-visible:ring-offset-2 focus-visible:ring-offset-[#111111]"
               >
-                <CheckCircle className="w-3.5 h-3.5" />
+                <CheckCircle className="w-3.5 h-3.5" aria-hidden="true" />
                 Completar
               </button>
             )}
@@ -267,7 +269,7 @@ export function AdminPanel() {
   const [filtro, setFiltro] = useState<OrderStatus | "todos">("todos")
   const [viewMode, setViewMode] = useState<"grid" | "list">("grid")
   const [activeTab, setActiveTab] = useState<"pedidos" | "menu" | "bot" | "stats">("pedidos")
-  const [lastOrderCount, setLastOrderCount] = useState(orders.length);
+  const lastOrderCount = useRef(orders.length);
   const [audioEnabled, setAudioEnabled] = useState(false);
 
   const playSound = () => {
@@ -293,10 +295,10 @@ export function AdminPanel() {
   };
 
   useEffect(() => {
-    if (orders.length > lastOrderCount && audioEnabled) {
+    if (orders.length > lastOrderCount.current && audioEnabled) {
       playSound();
     }
-    setLastOrderCount(orders.length);
+    lastOrderCount.current = orders.length;
   }, [orders, audioEnabled]);
 
   const pendingCount = orders.filter(o => o.status === "pendiente").length
@@ -409,9 +411,9 @@ export function AdminPanel() {
             <SidebarFooter className="p-4">
               <button
                 onClick={logout}
-                className="w-full h-12 flex items-center px-4 gap-3 rounded-xl border border-white/5 text-muted-foreground hover:bg-red-500/10 hover:text-red-500 hover:border-red-500/20 transition-all font-bold text-sm"
+                className="w-full h-12 flex items-center px-4 gap-3 rounded-xl border border-white/5 text-muted-foreground hover:bg-red-500/10 hover:text-red-500 hover:border-red-500/20 transition-all font-bold text-sm cursor-pointer focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-red-500"
               >
-                <LogOut className="w-4 h-4" />
+                <LogOut className="w-4 h-4" aria-hidden="true" />
                 Cerrar Sesión
               </button>
             </SidebarFooter>
@@ -431,11 +433,11 @@ export function AdminPanel() {
                 key={tab.id}
                 onClick={() => setActiveTab(tab.id as any)}
                 className={cn(
-                  "flex flex-col items-center justify-center gap-1 transition-all px-3 py-1 rounded-xl",
-                  activeTab === tab.id ? "text-primary scale-110" : "text-muted-foreground opacity-60"
+                  "flex flex-col items-center justify-center gap-1 transition-all px-3 py-1 rounded-xl cursor-pointer focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary motion-reduce:transition-none",
+                  activeTab === tab.id ? "text-primary scale-110 motion-reduce:scale-100" : "text-muted-foreground opacity-60"
                 )}
               >
-                <tab.icon className="w-5 h-5" />
+                <tab.icon className="w-5 h-5" aria-hidden="true" />
                 <span className="text-[9px] font-black uppercase tracking-widest">{tab.label}</span>
                 {tab.id === "pedidos" && pendingCount > 0 && (
                   <span className="absolute top-1 ml-4 flex h-4 w-4">
@@ -449,9 +451,9 @@ export function AdminPanel() {
             ))}
             <button
               onClick={logout}
-              className="flex flex-col items-center justify-center gap-1 text-muted-foreground opacity-60 px-3 py-1"
+              className="flex flex-col items-center justify-center gap-1 text-muted-foreground opacity-60 px-3 py-1 cursor-pointer focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-red-500 rounded-xl"
             >
-              <LogOut className="w-5 h-5" />
+              <LogOut className="w-5 h-5" aria-hidden="true" />
               <span className="text-[9px] font-black uppercase tracking-widest">Salir</span>
             </button>
           </div>
@@ -471,9 +473,10 @@ export function AdminPanel() {
               </div>
               <button
                 onClick={refresh}
-                className="md:hidden w-10 h-10 rounded-lg bg-white/5 border border-white/10 flex items-center justify-center text-muted-foreground active:scale-95 transition-all"
+                aria-label="Actualizar pedidos"
+                className="md:hidden w-10 h-10 rounded-lg bg-white/5 border border-white/10 flex items-center justify-center text-muted-foreground active:scale-95 transition-all cursor-pointer focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary"
               >
-                <RefreshCw className={cn("w-4 h-4", loading && "animate-spin")} />
+                <RefreshCw className={cn("w-4 h-4", loading && "animate-spin")} aria-hidden="true" />
               </button>
             </div>
 
@@ -484,8 +487,8 @@ export function AdminPanel() {
                 <button
                   onClick={toggleStoreStatus}
                   className={cn(
-                    "ml-1 px-2 py-0.5 rounded-lg text-[8px] md:text-[9px] font-black uppercase transition-all border",
-                    isOpen ? "bg-red-500/10 text-red-500 border-red-500/30 hover:bg-red-500/20" : "bg-green-500/10 text-green-500 border-green-500/30 hover:bg-green-500/20"
+                    "ml-1 px-2 py-0.5 rounded-lg text-[8px] md:text-[9px] font-black uppercase transition-all border cursor-pointer focus-visible:outline-none focus-visible:ring-2",
+                    isOpen ? "bg-red-500/10 text-red-500 border-red-500/30 hover:bg-red-500/20 focus-visible:ring-red-500" : "bg-green-500/10 text-green-500 border-green-500/30 hover:bg-green-500/20 focus-visible:ring-green-500"
                   )}
                 >
                   {isOpen ? 'Cerrar' : 'Abrir'}
@@ -496,13 +499,13 @@ export function AdminPanel() {
               <button
                 onClick={playSound}
                 className={cn(
-                  "flex items-center gap-2 px-3 py-1.5 rounded-xl border transition-all active:scale-95",
-                  audioEnabled 
-                    ? "bg-green-500/10 border-green-500/30 text-green-500" 
-                    : "bg-yellow-500/10 border-yellow-500/30 text-yellow-500 animate-pulse shadow-[0_0_15px_rgba(234,179,8,0.2)]"
+                  "flex items-center gap-2 px-3 py-1.5 rounded-xl border transition-all active:scale-95 cursor-pointer focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary",
+                  audioEnabled
+                    ? "bg-green-500/10 border-green-500/30 text-green-500"
+                    : "bg-yellow-500/10 border-yellow-500/30 text-yellow-500 animate-pulse motion-reduce:animate-none shadow-[0_0_15px_rgba(234,179,8,0.2)]"
                 )}
               >
-                {audioEnabled ? <Volume2 className="w-4 h-4" /> : <Bell className="w-4 h-4 animate-bounce" />}
+                {audioEnabled ? <Volume2 className="w-4 h-4" aria-hidden="true" /> : <Bell className="w-4 h-4 animate-bounce motion-reduce:animate-none" aria-hidden="true" />}
                 <span className="text-[9px] md:text-[10px] font-black uppercase tracking-widest">
                   {audioEnabled ? 'Sonido Activo' : 'Activar Sonido'}
                 </span>
@@ -513,15 +516,19 @@ export function AdminPanel() {
                   <div className="hidden md:flex bg-white/5 rounded-lg p-1">
                     <button
                       onClick={() => setViewMode("grid")}
-                      className={cn("p-1.5 rounded-md transition-all", viewMode === "grid" ? "bg-primary text-primary-foreground" : "text-muted-foreground hover:text-foreground")}
+                      aria-label="Vista en cuadrícula"
+                      aria-pressed={viewMode === "grid"}
+                      className={cn("p-1.5 rounded-md transition-all cursor-pointer focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary", viewMode === "grid" ? "bg-primary text-primary-foreground" : "text-muted-foreground hover:text-foreground")}
                     >
-                      <LayoutGrid className="w-4 h-4" />
+                      <LayoutGrid className="w-4 h-4" aria-hidden="true" />
                     </button>
                     <button
                       onClick={() => setViewMode("list")}
-                      className={cn("p-1.5 rounded-md transition-all", viewMode === "list" ? "bg-primary text-primary-foreground" : "text-muted-foreground hover:text-foreground")}
+                      aria-label="Vista en lista"
+                      aria-pressed={viewMode === "list"}
+                      className={cn("p-1.5 rounded-md transition-all cursor-pointer focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary", viewMode === "list" ? "bg-primary text-primary-foreground" : "text-muted-foreground hover:text-foreground")}
                     >
-                      <List className="w-4 h-4" />
+                      <List className="w-4 h-4" aria-hidden="true" />
                     </button>
                   </div>
 
@@ -530,8 +537,9 @@ export function AdminPanel() {
                       <button
                         key={s}
                         onClick={() => setFiltro(s)}
+                        aria-pressed={filtro === s}
                         className={cn(
-                          "px-2.5 md:px-3 py-1.5 rounded-md text-[9px] md:text-[10px] font-black uppercase tracking-widest transition-all whitespace-nowrap",
+                          "px-2.5 md:px-3 py-1.5 rounded-md text-[9px] md:text-[10px] font-black uppercase tracking-widest transition-all whitespace-nowrap cursor-pointer focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary",
                           filtro === s ? "bg-white/10 text-white shadow-sm" : "text-muted-foreground hover:text-white"
                         )}
                       >
@@ -542,9 +550,10 @@ export function AdminPanel() {
 
                   <button
                     onClick={refresh}
-                    className="hidden md:flex w-10 h-10 rounded-lg bg-white/5 border border-white/10 items-center justify-center hover:bg-white/10 transition-all text-muted-foreground"
+                    aria-label="Actualizar pedidos"
+                    className="hidden md:flex w-10 h-10 rounded-lg bg-white/5 border border-white/10 items-center justify-center hover:bg-white/10 transition-all text-muted-foreground cursor-pointer focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary"
                   >
-                    <RefreshCw className={cn("w-4 h-4", loading && "animate-spin")} />
+                    <RefreshCw className={cn("w-4 h-4", loading && "animate-spin")} aria-hidden="true" />
                   </button>
                 </div>
               )}
@@ -626,6 +635,27 @@ export function AdminPanel() {
 function StatsDashboard({ orders, totalSales, refresh }: { orders: Order[], totalSales: number, refresh: () => void }) {
   const [showCierre, setShowCierre] = useState(false)
   const [isClosing, setIsClosing] = useState(false)
+  const cierreTitleId = useId()
+  const cierreCancelRef = useRef<HTMLButtonElement>(null)
+
+  // Modal de cierre: cerrar con Escape, bloquear scroll de fondo y mover el foco al abrir.
+  useEffect(() => {
+    if (!showCierre) return
+    const handleKeyDown = (e: KeyboardEvent) => {
+      if (e.key === "Escape") setShowCierre(false)
+    }
+    document.addEventListener("keydown", handleKeyDown)
+
+    const previousOverflow = document.body.style.overflow
+    document.body.style.overflow = "hidden"
+
+    cierreCancelRef.current?.focus()
+
+    return () => {
+      document.removeEventListener("keydown", handleKeyDown)
+      document.body.style.overflow = previousOverflow
+    }
+  }, [showCierre])
   const [lastCierre, setLastCierre] = useState<number>(() => {
     if (typeof window !== "undefined") return Number(localStorage.getItem("last_cierre") || 0)
     return 0
@@ -698,17 +728,17 @@ function StatsDashboard({ orders, totalSales, refresh }: { orders: Order[], tota
   }
 
   return (
-    <div className="space-y-6 animate-in fade-in slide-in-from-bottom-4 duration-500">
+    <div className="space-y-6 animate-in fade-in slide-in-from-bottom-4 duration-500 motion-reduce:animate-none">
       <div className="flex justify-between items-center bg-[#111] border border-white/5 p-6 rounded-2xl shadow-xl">
         <div>
           <h2 className="text-xl font-bold">Resumen de Caja</h2>
           <p className="text-sm text-muted-foreground">Control de ventas y rendimiento diario.</p>
         </div>
-        <button 
+        <button
           onClick={() => setShowCierre(true)}
-          className="bg-primary text-primary-foreground px-6 py-2.5 rounded-xl font-black text-sm hover:scale-105 transition-all shadow-lg shadow-primary/20 flex items-center gap-2"
+          className="bg-primary text-primary-foreground px-6 py-2.5 rounded-xl font-black text-sm hover:scale-105 motion-reduce:hover:scale-100 transition-all shadow-lg shadow-primary/20 flex items-center gap-2 cursor-pointer focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary focus-visible:ring-offset-2 focus-visible:ring-offset-[#111]"
         >
-          <LogOut className="w-4 h-4" /> Cerrar Caja
+          <LogOut className="w-4 h-4" aria-hidden="true" /> Cerrar Caja
         </button>
       </div>
 
@@ -814,13 +844,22 @@ function StatsDashboard({ orders, totalSales, refresh }: { orders: Order[], tota
 
       {/* Modal de Cierre de Caja */}
       {showCierre && (
-        <div className="fixed inset-0 bg-black/90 z-[100] flex items-center justify-center p-4 backdrop-blur-md animate-in fade-in duration-300">
-          <div className="bg-[#0a0a0a] border border-white/10 rounded-3xl w-full max-w-md overflow-hidden shadow-2xl">
+        <div
+          className="fixed inset-0 bg-black/90 z-[100] flex items-center justify-center p-4 backdrop-blur-md animate-in fade-in duration-300 motion-reduce:animate-none"
+          onClick={() => setShowCierre(false)}
+        >
+          <div
+            role="dialog"
+            aria-modal="true"
+            aria-labelledby={cierreTitleId}
+            onClick={(e) => e.stopPropagation()}
+            className="bg-[#0a0a0a] border border-white/10 rounded-3xl w-full max-w-md overflow-hidden shadow-2xl animate-in zoom-in-95 fade-in duration-200 motion-reduce:animate-none"
+          >
             <div className="p-8 text-center">
               <div className="w-20 h-20 bg-primary/10 rounded-full flex items-center justify-center mx-auto mb-6 border border-primary/20">
                  <DollarSign className="w-10 h-10 text-primary" />
               </div>
-              <h3 className="text-2xl font-black text-white mb-2">Cierre de Caja</h3>
+              <h3 id={cierreTitleId} className="text-2xl font-black text-white mb-2">Cierre de Caja</h3>
               <p className="text-muted-foreground text-sm mb-8">Resumen final de la jornada de hoy.</p>
               
               <div className="space-y-3 mb-8">
@@ -843,16 +882,17 @@ function StatsDashboard({ orders, totalSales, refresh }: { orders: Order[], tota
               </div>
 
               <div className="grid grid-cols-2 gap-4">
-                <button 
+                <button
+                  ref={cierreCancelRef}
                   onClick={() => setShowCierre(false)}
-                  className="px-6 py-4 rounded-2xl font-bold text-sm bg-white/5 hover:bg-white/10 transition-colors"
+                  className="px-6 py-4 rounded-2xl font-bold text-sm bg-white/5 hover:bg-white/10 transition-colors cursor-pointer focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary"
                 >
                   Cancelar
                 </button>
-                <button 
+                <button
                   onClick={handleCerrarCaja}
                   disabled={isClosing}
-                  className="px-6 py-4 rounded-2xl font-black text-sm bg-primary text-primary-foreground hover:bg-primary/90 transition-all disabled:opacity-50"
+                  className="px-6 py-4 rounded-2xl font-black text-sm bg-primary text-primary-foreground hover:bg-primary/90 transition-all disabled:opacity-50 disabled:cursor-not-allowed cursor-pointer focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary focus-visible:ring-offset-2 focus-visible:ring-offset-[#0a0a0a]"
                 >
                   {isClosing ? "Cerrando..." : "Finalizar Día"}
                 </button>

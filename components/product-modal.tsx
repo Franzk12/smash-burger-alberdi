@@ -1,7 +1,7 @@
 "use client";
 
 import { X, Plus, Minus, Check } from "lucide-react";
-import { useState } from "react";
+import { useState, useEffect, useRef, useId } from "react";
 import Image from "next/image";
 import { useCart } from "@/context/cart-context";
 import { Product } from "@/lib/products-context";
@@ -17,6 +17,26 @@ export function ProductModal({ product, extras, onClose }: Props) {
   const [quantity, setQuantity] = useState(1);
   const [selectedExtras, setSelectedExtras] = useState<{ name: string; price: number }[]>([]);
   const [notes, setNotes] = useState("");
+  const titleId = useId();
+  const closeButtonRef = useRef<HTMLButtonElement>(null);
+
+  // Cerrar con Escape, bloquear scroll de fondo y mover el foco al abrir.
+  useEffect(() => {
+    const handleKeyDown = (e: KeyboardEvent) => {
+      if (e.key === "Escape") onClose();
+    };
+    document.addEventListener("keydown", handleKeyDown);
+
+    const previousOverflow = document.body.style.overflow;
+    document.body.style.overflow = "hidden";
+
+    closeButtonRef.current?.focus();
+
+    return () => {
+      document.removeEventListener("keydown", handleKeyDown);
+      document.body.style.overflow = previousOverflow;
+    };
+  }, [onClose]);
 
   const toggleExtra = (extra: Product) => {
     setSelectedExtras((prev) => {
@@ -51,8 +71,17 @@ export function ProductModal({ product, extras, onClose }: Props) {
   };
 
   return (
-    <div className="fixed inset-0 bg-black/70 z-[100] flex items-center justify-center p-4 backdrop-blur-sm">
-      <div className="bg-card w-full max-w-lg rounded-2xl overflow-hidden shadow-2xl flex flex-col max-h-[90vh]">
+    <div
+      className="fixed inset-0 bg-black/80 z-[100] flex items-center justify-center p-4 animate-in fade-in duration-150 motion-reduce:animate-none"
+      onClick={onClose}
+    >
+      <div
+        role="dialog"
+        aria-modal="true"
+        aria-labelledby={titleId}
+        onClick={(e) => e.stopPropagation()}
+        className="bg-card w-full max-w-lg rounded-2xl overflow-hidden shadow-2xl flex flex-col max-h-[90vh] transform-gpu animate-in zoom-in-95 fade-in duration-200 motion-reduce:animate-none"
+      >
         {/* Header con imagen */}
         <div className="relative h-48 sm:h-64 bg-muted">
           {product.image_url ? (
@@ -63,8 +92,10 @@ export function ProductModal({ product, extras, onClose }: Props) {
             </div>
           )}
           <button
+            ref={closeButtonRef}
             onClick={onClose}
-            className="absolute top-4 right-4 p-2 bg-black/50 hover:bg-black/70 text-white rounded-full backdrop-blur-md transition-colors"
+            aria-label="Cerrar"
+            className="absolute top-4 right-4 p-2 bg-black/50 hover:bg-black/70 text-white rounded-full backdrop-blur-md transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-white"
           >
             <X className="w-5 h-5" />
           </button>
@@ -72,7 +103,7 @@ export function ProductModal({ product, extras, onClose }: Props) {
 
         <div className="p-6 overflow-y-auto">
           <div className="flex justify-between items-start mb-2">
-            <h3 className="text-2xl font-bold text-foreground">{product.name}</h3>
+            <h3 id={titleId} className="text-2xl font-bold text-foreground">{product.name}</h3>
             <span className="text-xl font-black text-primary">${product.price.toLocaleString("es-AR")}</span>
           </div>
           <p className="text-muted-foreground text-sm mb-6 leading-relaxed">{product.description}</p>

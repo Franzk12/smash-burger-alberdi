@@ -34,9 +34,10 @@ export function OrdersProvider({ children }: { children: ReactNode }) {
   }, [])
 
   const fetchOrders = useCallback(async () => {
+    if (!password) return
     try {
       const res = await fetch("/api/pedidos", {
-        headers: { "x-panel-password": password || "" },
+        headers: { "x-panel-password": password },
       })
       if (!res.ok) return
       const data = await res.json()
@@ -59,26 +60,16 @@ export function OrdersProvider({ children }: { children: ReactNode }) {
     fetchOrders()
     fetchConfig()
 
-    // Configurar Polling (Cada 30 segundos) como respaldo al RLS
+    // Polling cada 5s. El Realtime de Supabase NO sirve para `pedidos`:
+    // la tabla tiene RLS service_role-only, así que el cliente anónimo
+    // (publishable key) nunca recibe los cambios. El polling al endpoint
+    // /api/pedidos (que usa el service_role) es la fuente confiable.
     const interval = setInterval(() => {
       fetchOrders()
       fetchConfig()
-    }, 30000)
-
-    // Configurar Realtime con Supabase
-    const channel = supabase
-      .channel('pedidos_cambios')
-      .on(
-        'postgres_changes',
-        { event: '*', table: 'pedidos', schema: 'public' },
-        () => {
-          fetchOrders()
-        }
-      )
-      .subscribe()
+    }, 5000)
 
     return () => {
-      supabase.removeChannel(channel)
       clearInterval(interval)
     }
   }, [fetchOrders, fetchConfig])

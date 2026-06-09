@@ -11,7 +11,10 @@ type Props = {
 export function CartButton({ onClick }: Props) {
   const { itemCount, total } = useCart();
   const [bounce, setBounce] = useState(false);
+  const [mounted, setMounted] = useState(false);
   const prevCount = useRef(itemCount);
+
+  useEffect(() => { setMounted(true); }, []);
 
   useEffect(() => {
     if (itemCount > prevCount.current) {
@@ -22,7 +25,7 @@ export function CartButton({ onClick }: Props) {
     prevCount.current = itemCount;
   }, [itemCount]);
 
-  if (itemCount === 0) return null;
+  if (!mounted || itemCount === 0) return null;
 
   return (
     <button

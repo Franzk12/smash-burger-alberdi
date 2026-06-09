@@ -1,6 +1,6 @@
 "use client"
 
-import { useState, useEffect } from "react"
+import { useState, useEffect, useCallback } from "react"
 import { Play, Square, RefreshCw, Smartphone, LogOut, MessageCircle } from "lucide-react"
 import { cn } from "@/lib/utils"
 import QRCode from "react-qr-code"
@@ -14,11 +14,11 @@ export function BotAdmin() {
   const [botState, setBotState] = useState<BotStatus>({ status: "APAGADO", qr: null })
   const [loading, setLoading] = useState(false)
 
-  const fetchStatus = async () => {
+  const fetchStatus = useCallback(async () => {
     try {
-      const password = typeof window !== 'undefined' ? sessionStorage.getItem("smash_pass") : ""
+      const password = sessionStorage.getItem("smash_pass") ?? ""
       const res = await fetch("/api/bot", {
-        headers: { "x-panel-password": password || "" }
+        headers: { "x-panel-password": password }
       })
       if (res.ok) {
         const data = await res.json()
@@ -27,14 +27,13 @@ export function BotAdmin() {
     } catch (e) {
       console.error(e)
     }
-  }
+  }, [])
 
   useEffect(() => {
     fetchStatus()
-    // Poll every 3 seconds
     const interval = setInterval(fetchStatus, 3000)
     return () => clearInterval(interval)
-  }, [])
+  }, [fetchStatus])
 
   const handleAction = async (action: "start" | "stop" | "logout") => {
     if (action === "logout" && !confirm("¿Seguro que quieres desvincular este WhatsApp? Tendrás que volver a escanear un código QR.")) return;
