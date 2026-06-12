@@ -1,10 +1,11 @@
 "use client";
 
 import { X, Plus, Minus, Check } from "lucide-react";
-import { useState, useEffect, useRef, useId } from "react";
+import { useState, useRef, useId } from "react";
 import Image from "next/image";
 import { useCart } from "@/context/cart-context";
 import { Product } from "@/lib/products-context";
+import { useModalA11y } from "@/lib/use-modal-a11y";
 
 type Props = {
   product: Product;
@@ -18,25 +19,11 @@ export function ProductModal({ product, extras, onClose }: Props) {
   const [selectedExtras, setSelectedExtras] = useState<{ name: string; price: number }[]>([]);
   const [notes, setNotes] = useState("");
   const titleId = useId();
+  const dialogRef = useRef<HTMLDivElement>(null);
   const closeButtonRef = useRef<HTMLButtonElement>(null);
 
-  // Cerrar con Escape, bloquear scroll de fondo y mover el foco al abrir.
-  useEffect(() => {
-    const handleKeyDown = (e: KeyboardEvent) => {
-      if (e.key === "Escape") onClose();
-    };
-    document.addEventListener("keydown", handleKeyDown);
-
-    const previousOverflow = document.body.style.overflow;
-    document.body.style.overflow = "hidden";
-
-    closeButtonRef.current?.focus();
-
-    return () => {
-      document.removeEventListener("keydown", handleKeyDown);
-      document.body.style.overflow = previousOverflow;
-    };
-  }, [onClose]);
+  // Escape, scroll-lock, foco inicial y focus trap (ver lib/use-modal-a11y).
+  useModalA11y(dialogRef, onClose, { initialFocusRef: closeButtonRef });
 
   const toggleExtra = (extra: Product) => {
     setSelectedExtras((prev) => {
@@ -76,11 +63,13 @@ export function ProductModal({ product, extras, onClose }: Props) {
       onClick={onClose}
     >
       <div
+        ref={dialogRef}
         role="dialog"
         aria-modal="true"
         aria-labelledby={titleId}
+        tabIndex={-1}
         onClick={(e) => e.stopPropagation()}
-        className="bg-card w-full max-w-lg rounded-2xl overflow-hidden shadow-2xl flex flex-col max-h-[90vh] transform-gpu animate-in zoom-in-95 fade-in duration-200 motion-reduce:animate-none"
+        className="bg-card w-full max-w-lg rounded-2xl overflow-hidden shadow-2xl flex flex-col max-h-[90vh] transform-gpu animate-in zoom-in-95 fade-in duration-200 motion-reduce:animate-none focus:outline-none"
       >
         {/* Header con imagen */}
         <div className="relative h-48 sm:h-64 bg-muted">
@@ -95,7 +84,7 @@ export function ProductModal({ product, extras, onClose }: Props) {
             ref={closeButtonRef}
             onClick={onClose}
             aria-label="Cerrar"
-            className="absolute top-4 right-4 p-2 bg-black/50 hover:bg-black/70 text-white rounded-full backdrop-blur-md transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-white"
+            className="absolute top-4 right-4 p-2 bg-black/50 hover:bg-black/70 text-white rounded-full backdrop-blur-md transition-colors cursor-pointer focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-white"
           >
             <X className="w-5 h-5" />
           </button>
@@ -120,10 +109,13 @@ export function ProductModal({ product, extras, onClose }: Props) {
                   return (
                     <button
                       key={extra.id}
+                      type="button"
                       onClick={() => toggleExtra(extra)}
-                      className={`flex items-center justify-between p-3 rounded-xl border transition-all duration-200 ${
-                        isSelected 
-                          ? "bg-primary/10 border-primary text-primary" 
+                      aria-pressed={!!isSelected}
+                      aria-label={`${extra.name}, +$${extra.price.toLocaleString("es-AR")}`}
+                      className={`flex items-center justify-between p-3 rounded-xl border transition-all duration-200 cursor-pointer focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary ${
+                        isSelected
+                          ? "bg-primary/10 border-primary text-primary"
                           : "bg-secondary/50 border-border hover:border-primary/50"
                       }`}
                     >
@@ -156,23 +148,28 @@ export function ProductModal({ product, extras, onClose }: Props) {
           <div className="flex items-center gap-4 mt-8">
             <div className="flex items-center gap-3 bg-secondary p-2 rounded-xl border border-border">
               <button
+                type="button"
                 onClick={() => setQuantity(Math.max(1, quantity - 1))}
-                className="w-8 h-8 rounded-lg bg-card flex items-center justify-center hover:text-primary transition-colors disabled:opacity-50"
+                aria-label="Restar uno"
+                className="w-8 h-8 rounded-lg bg-card flex items-center justify-center hover:text-primary transition-colors disabled:opacity-50 disabled:cursor-not-allowed cursor-pointer focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary"
                 disabled={quantity <= 1}
               >
                 <Minus className="w-4 h-4" />
               </button>
-              <span className="w-6 text-center font-bold">{quantity}</span>
+              <span className="w-6 text-center font-bold" aria-live="polite">{quantity}</span>
               <button
+                type="button"
                 onClick={() => setQuantity(quantity + 1)}
-                className="w-8 h-8 rounded-lg bg-card flex items-center justify-center hover:text-primary transition-colors"
+                aria-label="Sumar uno"
+                className="w-8 h-8 rounded-lg bg-card flex items-center justify-center hover:text-primary transition-colors cursor-pointer focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary"
               >
                 <Plus className="w-4 h-4" />
               </button>
             </div>
             <button
+              type="button"
               onClick={handleAdd}
-              className="flex-1 bg-primary text-primary-foreground py-3 rounded-xl font-bold hover:bg-primary/90 transition-all shadow-lg shadow-primary/20 flex items-center justify-center gap-2"
+              className="flex-1 bg-primary text-primary-foreground py-3 rounded-xl font-bold hover:bg-primary/90 transition-all shadow-lg shadow-primary/20 flex items-center justify-center gap-2 cursor-pointer focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary focus-visible:ring-offset-2 focus-visible:ring-offset-card"
             >
               Agregar por ${totalPrice.toLocaleString("es-AR")}
             </button>

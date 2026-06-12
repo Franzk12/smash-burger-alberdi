@@ -4,6 +4,7 @@ import { useState, useEffect, useRef, useId } from "react"
 import { useOrders } from "@/lib/orders-context"
 import { useAuth } from "@/lib/auth-context"
 import { useProducts } from "@/lib/products-context"
+import { useModalA11y } from "@/lib/use-modal-a11y"
 import type { Order, OrderStatus } from "@/lib/types"
 import {
   ShoppingBag, Clock, ChefHat, CheckCircle, Truck,
@@ -636,26 +637,14 @@ function StatsDashboard({ orders, totalSales, refresh }: { orders: Order[], tota
   const [showCierre, setShowCierre] = useState(false)
   const [isClosing, setIsClosing] = useState(false)
   const cierreTitleId = useId()
+  const cierreDialogRef = useRef<HTMLDivElement>(null)
   const cierreCancelRef = useRef<HTMLButtonElement>(null)
 
-  // Modal de cierre: cerrar con Escape, bloquear scroll de fondo y mover el foco al abrir.
-  useEffect(() => {
-    if (!showCierre) return
-    const handleKeyDown = (e: KeyboardEvent) => {
-      if (e.key === "Escape") setShowCierre(false)
-    }
-    document.addEventListener("keydown", handleKeyDown)
-
-    const previousOverflow = document.body.style.overflow
-    document.body.style.overflow = "hidden"
-
-    cierreCancelRef.current?.focus()
-
-    return () => {
-      document.removeEventListener("keydown", handleKeyDown)
-      document.body.style.overflow = previousOverflow
-    }
-  }, [showCierre])
+  // Escape, scroll-lock, foco inicial y focus trap (ver lib/use-modal-a11y).
+  useModalA11y(cierreDialogRef, () => setShowCierre(false), {
+    enabled: showCierre,
+    initialFocusRef: cierreCancelRef,
+  })
   const [lastCierre, setLastCierre] = useState<number>(() => {
     if (typeof window !== "undefined") return Number(localStorage.getItem("last_cierre") || 0)
     return 0
@@ -849,11 +838,13 @@ function StatsDashboard({ orders, totalSales, refresh }: { orders: Order[], tota
           onClick={() => setShowCierre(false)}
         >
           <div
+            ref={cierreDialogRef}
             role="dialog"
             aria-modal="true"
             aria-labelledby={cierreTitleId}
+            tabIndex={-1}
             onClick={(e) => e.stopPropagation()}
-            className="bg-[#0a0a0a] border border-white/10 rounded-3xl w-full max-w-md overflow-hidden shadow-2xl animate-in zoom-in-95 fade-in duration-200 motion-reduce:animate-none"
+            className="bg-[#0a0a0a] border border-white/10 rounded-3xl w-full max-w-md overflow-hidden shadow-2xl animate-in zoom-in-95 fade-in duration-200 motion-reduce:animate-none focus:outline-none"
           >
             <div className="p-8 text-center">
               <div className="w-20 h-20 bg-primary/10 rounded-full flex items-center justify-center mx-auto mb-6 border border-primary/20">

@@ -5,6 +5,7 @@ import { useCart } from "@/context/cart-context";
 import { CheckoutModal } from "./checkout-modal";
 import { useState, useEffect, useRef, useId } from "react";
 import { useStoreStatus } from "@/lib/store-status-context";
+import { useModalA11y } from "@/lib/use-modal-a11y";
 
 type Props = {
   open: boolean;
@@ -17,6 +18,7 @@ export function CartDrawer({ open, onClose }: Props) {
   const isOpen = useStoreStatus();
   const [waitMinutes, setWaitMinutes] = useState<number | null>(null);
   const titleId = useId();
+  const dialogRef = useRef<HTMLDivElement>(null);
   const closeButtonRef = useRef<HTMLButtonElement>(null);
 
   useEffect(() => {
@@ -27,24 +29,8 @@ export function CartDrawer({ open, onClose }: Props) {
       .catch(() => {});
   }, [open]);
 
-  // Cerrar con Escape, bloquear scroll de fondo y mover el foco al abrir.
-  useEffect(() => {
-    if (!open) return;
-    const handleKeyDown = (e: KeyboardEvent) => {
-      if (e.key === "Escape") onClose();
-    };
-    document.addEventListener("keydown", handleKeyDown);
-
-    const previousOverflow = document.body.style.overflow;
-    document.body.style.overflow = "hidden";
-
-    closeButtonRef.current?.focus();
-
-    return () => {
-      document.removeEventListener("keydown", handleKeyDown);
-      document.body.style.overflow = previousOverflow;
-    };
-  }, [open, onClose]);
+  // Escape, scroll-lock, foco inicial y focus trap (ver lib/use-modal-a11y).
+  useModalA11y(dialogRef, onClose, { enabled: open, initialFocusRef: closeButtonRef });
 
   if (!open) return null;
 
@@ -58,10 +44,12 @@ export function CartDrawer({ open, onClose }: Props) {
 
       {/* Panel */}
       <div
+        ref={dialogRef}
         role="dialog"
         aria-modal="true"
         aria-labelledby={titleId}
-        className="fixed right-0 top-0 h-full w-full max-w-md bg-card border-l border-border z-50 flex flex-col shadow-2xl transform-gpu animate-in slide-in-from-right duration-300 motion-reduce:animate-none"
+        tabIndex={-1}
+        className="fixed right-0 top-0 h-full w-full max-w-md bg-card border-l border-border z-50 flex flex-col shadow-2xl transform-gpu animate-in slide-in-from-right duration-300 motion-reduce:animate-none focus:outline-none"
       >
         {/* Header */}
         <div className="flex items-center justify-between px-6 py-4 border-b border-border">

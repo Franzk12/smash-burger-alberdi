@@ -1,15 +1,25 @@
 "use client"
 
-import { useState } from "react"
+import { useRef, useId, useState } from "react"
 import { useProducts } from "@/lib/products-context"
 import { Plus, Trash2, Edit2, X } from "lucide-react"
 import type { Product } from "@/lib/products-context"
 import { cn } from "@/lib/utils"
+import { useModalA11y } from "@/lib/use-modal-a11y"
 
 export function MenuAdmin() {
   const { products, updateProduct, addProduct, deleteProduct } = useProducts()
   const [editingProduct, setEditingProduct] = useState<Partial<Product> | null>(null)
   const [isModalOpen, setIsModalOpen] = useState(false)
+  const modalTitleId = useId()
+  const dialogRef = useRef<HTMLDivElement>(null)
+  const closeButtonRef = useRef<HTMLButtonElement>(null)
+
+  // Escape, scroll-lock, foco inicial y focus trap (ver lib/use-modal-a11y).
+  useModalA11y(dialogRef, () => setIsModalOpen(false), {
+    enabled: isModalOpen,
+    initialFocusRef: closeButtonRef,
+  })
 
   const handleSave = async (e: React.FormEvent) => {
     e.preventDefault()
@@ -169,15 +179,32 @@ export function MenuAdmin() {
       </div>
 
       {isModalOpen && editingProduct && (
-        <div className="fixed inset-0 bg-black/90 z-50 flex items-center justify-center p-4 backdrop-blur-sm animate-in fade-in duration-200">
-          <div className="bg-[#0a0a0a] border border-white/10 rounded-2xl w-full max-w-lg overflow-hidden shadow-2xl animate-in zoom-in-95 duration-200">
+        <div
+          className="fixed inset-0 bg-black/90 z-50 flex items-center justify-center p-4 backdrop-blur-sm animate-in fade-in duration-200 motion-reduce:animate-none"
+          onClick={() => setIsModalOpen(false)}
+        >
+          <div
+            ref={dialogRef}
+            role="dialog"
+            aria-modal="true"
+            aria-labelledby={modalTitleId}
+            tabIndex={-1}
+            onClick={(e) => e.stopPropagation()}
+            className="bg-[#0a0a0a] border border-white/10 rounded-2xl w-full max-w-lg max-h-[90vh] flex flex-col overflow-hidden shadow-2xl animate-in zoom-in-95 duration-200 motion-reduce:animate-none focus:outline-none"
+          >
             <div className="p-5 border-b border-white/5 flex justify-between items-center bg-[#111111]">
-              <h3 className="font-black tracking-tight text-xl">{editingProduct.id ? "Editar Producto" : "Nuevo Producto"}</h3>
-              <button onClick={() => setIsModalOpen(false)} className="p-1.5 hover:bg-white/10 rounded-md transition-colors text-muted-foreground">
+              <h3 id={modalTitleId} className="font-black tracking-tight text-xl">{editingProduct.id ? "Editar Producto" : "Nuevo Producto"}</h3>
+              <button
+                ref={closeButtonRef}
+                type="button"
+                onClick={() => setIsModalOpen(false)}
+                aria-label="Cerrar"
+                className="p-1.5 hover:bg-white/10 rounded-md transition-colors text-muted-foreground cursor-pointer focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary"
+              >
                 <X className="w-5 h-5" />
               </button>
             </div>
-            <form onSubmit={handleSave} className="p-6 space-y-5">
+            <form onSubmit={handleSave} className="p-6 space-y-5 overflow-y-auto">
               <div>
                 <label className="block text-[10px] font-black text-muted-foreground mb-1.5 uppercase tracking-widest">Nombre del Producto</label>
                 <input
@@ -251,13 +278,13 @@ export function MenuAdmin() {
                 <button
                   type="button"
                   onClick={() => setIsModalOpen(false)}
-                  className="px-6 py-3 rounded-xl font-bold text-sm bg-white/5 hover:bg-white/10 transition-colors"
+                  className="px-6 py-3 rounded-xl font-bold text-sm bg-white/5 hover:bg-white/10 transition-colors cursor-pointer focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary"
                 >
                   Cancelar
                 </button>
                 <button
                   type="submit"
-                  className="px-6 py-3 rounded-xl font-black text-sm bg-primary text-primary-foreground hover:bg-primary/90 transition-all shadow-lg shadow-primary/20"
+                  className="px-6 py-3 rounded-xl font-black text-sm bg-primary text-primary-foreground hover:bg-primary/90 transition-all shadow-lg shadow-primary/20 cursor-pointer focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary focus-visible:ring-offset-2 focus-visible:ring-offset-[#0a0a0a]"
                 >
                   {editingProduct.id ? "Guardar Cambios" : "Crear Producto"}
                 </button>

@@ -58,8 +58,10 @@ Checklist al tocar componentes interactivos:
 ## Reforma visual — en curso
 
 Estamos puliendo la UI. Estado actual:
-- ✅ `product-modal.tsx`: accesibilidad de modal completa (Escape, ARIA, foco, scroll-lock, reduced-motion).
-- ⏳ Pendiente: aplicar el mismo patrón de accesibilidad a `cart-drawer.tsx`, `checkout-modal.tsx` y demás overlays; luego seguir con consistencia visual del resto.
+- ✅ Accesibilidad de modales unificada en un hook compartido `lib/use-modal-a11y.ts` (Escape, scroll-lock, foco inicial y **focus trap** con Tab/Shift+Tab). Aplicado en `product-modal.tsx`, `cart-drawer.tsx` y `checkout-modal.tsx`.
+- ✅ `product-modal.tsx`: controles internos al checklist (agregados con `aria-pressed`, botones de cantidad con `aria-label`, `cursor-pointer` + `focus-visible:ring` en todo lo clickeable).
+- ✅ Panel admin: modal "Nuevo/Editar Producto" (`menu-admin.tsx`) con accesibilidad completa + `max-h`/scroll para no desbordar en móvil; modal "Cierre de Caja" (`admin-panel.tsx`) migrado al hook compartido (gana focus trap).
+- ⏳ Pendiente: revisar dropdowns/menús contextuales del admin (ej. `MoreVertical`) si los hubiera; luego seguir con consistencia visual del resto.
 
 Se está evaluando la skill **ui-ux-pro-max** (`nextlevelbuilder/ui-ux-pro-max-skill`) como asesor de diseño. Da recomendaciones genéricas (paleta/tipografía/checklist) que hay que **adaptar al branding negro+dorado**; no edita código por sí sola. Requiere Python 3 (ya disponible localmente).
 

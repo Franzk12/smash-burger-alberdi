@@ -1,8 +1,9 @@
 "use client";
 
-import { useState, useEffect, useRef, useId } from "react";
+import { useState, useRef, useId } from "react";
 import { X, MapPin, Store, Banknote, CreditCard, CheckCircle, RefreshCw } from "lucide-react";
 import { useCart } from "@/context/cart-context";
+import { useModalA11y } from "@/lib/use-modal-a11y";
 
 const WHATSAPP_NUMBER = "5493865228354";
 const DELIVERY_FEE_OUTSIDE = 2000;
@@ -19,25 +20,11 @@ export function CheckoutModal({ onClose, onSuccess }: Props) {
   const { items, total } = useCart();
 
   const titleId = useId();
+  const dialogRef = useRef<HTMLDivElement>(null);
   const closeButtonRef = useRef<HTMLButtonElement>(null);
 
-  // Cerrar con Escape, bloquear scroll de fondo y mover el foco al abrir.
-  useEffect(() => {
-    const handleKeyDown = (e: KeyboardEvent) => {
-      if (e.key === "Escape") onClose();
-    };
-    document.addEventListener("keydown", handleKeyDown);
-
-    const previousOverflow = document.body.style.overflow;
-    document.body.style.overflow = "hidden";
-
-    closeButtonRef.current?.focus();
-
-    return () => {
-      document.removeEventListener("keydown", handleKeyDown);
-      document.body.style.overflow = previousOverflow;
-    };
-  }, [onClose]);
+  // Escape, scroll-lock, foco inicial y focus trap (ver lib/use-modal-a11y).
+  useModalA11y(dialogRef, onClose, { initialFocusRef: closeButtonRef });
 
   const [step, setStep] = useState<Step>("modalidad");
   const [modalidad, setModalidad] = useState<"retiro" | "delivery" | "">("");
@@ -176,11 +163,13 @@ export function CheckoutModal({ onClose, onSuccess }: Props) {
       onClick={onClose}
     >
       <div
+        ref={dialogRef}
         role="dialog"
         aria-modal="true"
         aria-labelledby={titleId}
+        tabIndex={-1}
         onClick={(e) => e.stopPropagation()}
-        className="bg-card w-full max-w-md rounded-3xl overflow-hidden shadow-2xl border border-white/10 transform-gpu animate-in fade-in zoom-in duration-300 motion-reduce:animate-none"
+        className="bg-card w-full max-w-md rounded-3xl overflow-hidden shadow-2xl border border-white/10 transform-gpu animate-in fade-in zoom-in duration-300 motion-reduce:animate-none focus:outline-none"
       >
         <div className="p-6">
           <div className="flex items-center justify-between mb-6">
